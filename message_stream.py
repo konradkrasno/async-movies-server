@@ -45,20 +45,21 @@ class MessageStream:
                 break
         header = self.request_buffer[:self.request_header_len]
         self.request_header = self.decode_json(header)
-        self.request_buffer = self.request_buffer[self.response_header_len:]
+        self.request_buffer = self.request_buffer[self.request_header_len:]
 
     async def get_request_content(self, reader: asyncio.StreamReader) -> None:
         # TODO add avoiding infinite loop when wrong content len
+        content_len = self.request_header["content_length"]
         while True:
             data = await reader.read(10)
             # Simulate network latency
             await asyncio.sleep(0.2)
             print(data.decode())
             self.request_buffer += data
-            if len(self.request_buffer) >= self.request_header["content_length"]:
+            if len(self.request_buffer) >= content_len:
                 break
         self.decode_request_content()
-        self.request_buffer = b""
+        self.request_buffer = self.request_buffer[content_len:]
 
     def decode_request_content(self) -> None:
         content_type = self.request_header["content_type"]
