@@ -6,7 +6,6 @@ from message_stream import MessageStream
 
 
 class AsyncServer:
-
     def __init__(self, host: str, port: int, loop: asyncio.AbstractEventLoop = None):
         self.host = host
         self.port = port
@@ -14,10 +13,11 @@ class AsyncServer:
             self.loop = asyncio.get_event_loop()
         else:
             self.loop = loop
-        self.message = MessageStream()
 
     async def start_server(self) -> asyncio.AbstractServer:
-        server = await asyncio.start_server(self.handle_connection, self.host, self.port)
+        server = await asyncio.start_server(
+            self.handle_connection, self.host, self.port
+        )
         addr = self.get_addr(server)
         print(f"Serving on {addr}")
         return server
@@ -26,18 +26,13 @@ class AsyncServer:
     def get_addr(server: asyncio.AbstractServer) -> str:
         return server.sockets[0].getsockname() if server.sockets else "unknown"
 
-    async def handle_connection(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        # TODO refactor this function
-        ctx = {
-            'addr': writer.get_extra_info('peername')
-        }
-
-        # reader
-        message = await self.message.stream_receive(reader)
-
-        # writer
-        await self.message.send_data(writer, message['data'], message['encoding'])
-        await writer.drain()
+    async def handle_connection(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        ctx = {"addr": writer.get_extra_info("peername")}
+        message = MessageStream(response_content_type="text", response_encoding="utf-8")
+        request = await message.receive_stream(reader)
+        await message.send_data(writer, request)
         print("Close the client socket")
         writer.close()
 
@@ -49,7 +44,7 @@ class AsyncServer:
             pass
         return server
 
-    def close(self, server: asyncio.AbstractServer):
+    def close(self, server: asyncio.AbstractServer) -> None:
         server.close()
         self.loop.run_until_complete(server.wait_closed())
         self.loop.close()
