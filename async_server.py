@@ -31,17 +31,17 @@ class AsyncServer:
         reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         addr = writer.get_extra_info("peername")
-        message = MessageStream()
+        message = MessageStream(reader, writer)
         try:
-            header, request = await message.receive_stream(reader)
+            header, request = await message.receive_stream()
         except (ConnectionResetError, ValueError) as e:
             print(f"An error occurred: {e} when address: {addr} connect.")
         else:
             await message.send_stream(
-                writer, request, header["content_type"], header["content_encoding"]
+                request, header["content_type"], header["content_encoding"]
             )
-            print("Close the client socket")
-            writer.close()
+        finally:
+            message.close()
 
     def run_server(self) -> asyncio.AbstractServer:
         server = self.loop.run_until_complete(self.start_server())

@@ -18,15 +18,11 @@ valid_data = [
         "message": b"Hello world",
         "content_type": "binary",
         "encoding": "ascii",
-    }
+    },
 ]
 
 wrong_data = [
-    {
-        "message": "hey, what's up?",
-        "content_type": "unknown",
-        "encoding": "utf-8"
-    },
+    {"message": "hey, what's up?", "content_type": "unknown", "encoding": "utf-8"},
     {
         "message": "Hello world!",
         "content_type": "text",

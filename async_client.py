@@ -41,14 +41,19 @@ class AsyncClient:
         else:
             encoding = "utf-8"
 
-        message = MessageStream()
-        await message.send_stream(writer, request, content_type, encoding)
-        header, answer = await message.receive_stream(reader)
-        print("header:", header)
-        print("answer:", answer)
-        print("Close the socket")
-        writer.close()
-        return header, answer
+        message = MessageStream(reader, writer)
+        await message.send_stream(request, content_type, encoding)
+        try:
+            header, answer = await message.receive_stream()
+        except ValueError as e:
+            print(f"An error occurred: {e} when receiving data from server")
+        else:
+            print("header:", header)
+            print("answer:", answer)
+            return header, answer
+        finally:
+            message.close()
+        return {}, ""
 
     def run_client(self) -> Tuple[Dict, Union[str, Dict, bytes]]:
         return self.loop.run_until_complete(self.send_request())

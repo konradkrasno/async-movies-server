@@ -6,7 +6,9 @@ import struct
 
 
 class MessageStream:
-    def __init__(self):
+    def __init__(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        self.reader = reader
+        self.writer = writer
         self.recv_buffer: bytes = b""
         self.recv_content: Union[str, Dict, bytes] = {}
         self.recv_header: Dict[str, Union[str, int]] = {}
@@ -18,42 +20,40 @@ class MessageStream:
         self.header_len_to_send: int = int()
         self.encoding_to_send: str = "utf-8"
 
-    async def receive_stream(
-        self, reader: asyncio.StreamReader
-    ) -> Tuple[Dict, Union[str, Dict, bytes]]:
+    async def receive_stream(self) -> Tuple[Dict, Union[str, Dict, bytes]]:
         if not self.recv_header_len:
-            await self.get_recv_header_len(reader)
-        await self.get_recv_header(reader)
-        await self.get_recv_content(reader)
+            await self.get_recv_header_len()
+        await self.get_recv_header()
+        await self.get_recv_content()
         return self.recv_header, self.recv_content
 
-    async def get_recv_header_len(self, reader: asyncio.StreamReader) -> None:
-        data = await reader.read(2)
+    async def get_recv_header_len(self) -> None:
+        data = await self.reader.read(2)
         if data:
             self.recv_header_len = struct.unpack(">H", data)[0]
 
-    async def get_recv_header(self, reader: asyncio.StreamReader) -> None:
+    async def get_recv_header(self) -> None:
         if self.recv_header_len <= 0:
             raise ValueError("Header length must be greater than 0!")
 
         while True:
             if len(self.recv_buffer) >= self.recv_header_len:
                 break
-            data = await reader.read(10)
+            data = await self.reader.read(10)
             # Simulate network latency
             await asyncio.sleep(0.1)
             print(data.decode())
             self.recv_buffer += data
         header = self.recv_buffer[: self.recv_header_len]
         self.recv_header = self.decode_json(header)
-        self.recv_buffer = self.recv_buffer[self.recv_header_len:]
+        self.recv_buffer = self.recv_buffer[self.recv_header_len :]
 
-    async def get_recv_content(self, reader: asyncio.StreamReader) -> None:
+    async def get_recv_content(self) -> None:
         content_len = self.recv_header["content_length"]
         while True:
             if len(self.recv_buffer) >= content_len:
                 break
-            data = await reader.read(10)
+            data = await self.reader.read(10)
             # Simulate network latency
             await asyncio.sleep(0.1)
             print(data.decode())
@@ -74,20 +74,21 @@ class MessageStream:
 
     async def send_stream(
         self,
-        writer: asyncio.StreamWriter,
         data: Union[str, Dict, bytes],
         content_type: str,
         encoding: str = "utf-8",
     ) -> None:
-        self.validate_input(writer, data, content_type, encoding)
+        self.validate_input(data, content_type, encoding)
         self.prepare_data_to_send()
         print(f"Sending: {self.content_to_send}")
-        writer.write(self.data_to_send)
-        await writer.drain()
+        self.writer.write(self.data_to_send)
+        await self.writer.drain()
 
-    def validate_input(self, writer: asyncio.StreamWriter, data: Union[str, Dict, bytes], content_type: str, encoding: str) -> None:
+    def validate_input(
+        self, data: Union[str, Dict, bytes], content_type: str, encoding: str
+    ) -> None:
         if encoding not in ("utf-8", "ascii"):
-            writer.close()
+            self.close()
             raise ValueError("Wrong encoding! Available encodings: utf-8, ascii.")
         self.encoding_to_send = encoding
 
@@ -98,8 +99,10 @@ class MessageStream:
         elif type(data) == bytes and content_type == "binary":
             self.content_to_send = data
         else:
-            writer.close()
-            raise ValueError(f"Wrong value of data: {data} or content_type: {content_type}.")
+            self.close()
+            raise ValueError(
+                f"Wrong value of data: {data} or content_type: {content_type}."
+            )
         self.content_type_to_send = content_type
 
     def prepare_data_to_send(self) -> None:
@@ -133,3 +136,7 @@ class MessageStream:
 
     def encode_json(self, data: Dict) -> bytes:
         return json.dumps(data).encode(self.encoding_to_send)
+
+    def close(self):
+        print("Close the socket.")
+        self.writer.close()
