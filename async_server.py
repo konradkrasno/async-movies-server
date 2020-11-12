@@ -33,7 +33,7 @@ class AsyncServer:
         ctx = {"addr": writer.get_extra_info("peername")}
         message = MessageStream()
         header, request = await message.receive_stream(reader)
-        await message.send_data(
+        await message.send_stream(
             writer, request, header["content_type"], header["content_encoding"]
         )
         print("Close the client socket")

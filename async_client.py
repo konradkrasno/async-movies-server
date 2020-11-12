@@ -43,7 +43,7 @@ class AsyncClient:
 
         print(f"Sending: {data}")
         message = MessageStream()
-        await message.send_data(writer, data, content_type, encoding)
+        await message.send_stream(writer, data, content_type, encoding)
         header, answer = await message.receive_stream(reader)
         print("header:", header)
         print("answer:", answer)
