@@ -13,7 +13,7 @@ class AsyncClient:
         loop: asyncio.AbstractEventLoop = None,
         test_request: Union[str, Dict, bytes] = None,
         test_content_type: str = "",
-        test_encoding: Union[str, None] = None,
+        test_encoding: str = "",
     ):
         self.host = host
         self.port = port

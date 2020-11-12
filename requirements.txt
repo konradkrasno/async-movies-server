@@ -1,2 +1,2 @@
 pytest
-async-property
+asyncpg==0.21.0

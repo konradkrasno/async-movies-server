@@ -11,12 +11,12 @@ class MessageStream:
         self.recv_content: Union[str, Dict, bytes] = {}
         self.recv_header: Dict[str, Union[str, int]] = {}
         self.recv_header_len: int = int()
-        self.send_data: bytes = b""
-        self.send_content: bytes = b""
-        self.send_content_type: str = ""
-        self.send_header: Dict[str, Union[str, int]] = {}
-        self.send_header_len: int = int()
-        self.send_encoding: Union[str, None] = None
+        self.data_to_send: bytes = b""
+        self.content_to_send: bytes = b""
+        self.content_type_to_send: str = ""
+        self.header_to_send: Dict[str, Union[str, int]] = {}
+        self.header_len_to_send: int = int()
+        self.encoding_to_send: str = "utf-8"
 
     async def receive_stream(
         self, reader: asyncio.StreamReader
@@ -75,51 +75,51 @@ class MessageStream:
         writer: asyncio.StreamWriter,
         data: Union[str, Dict, bytes],
         content_type: str,
-        encoding: Union[str, None],
+        encoding: str = "utf-8",
     ) -> None:
-        self.send_content_type = content_type
-        self.send_encoding = encoding
-        self.add_send_content(data)
-        self.prepare_send_data()
-        writer.write(self.send_data)
+        self.content_type_to_send = content_type
+        self.encoding_to_send = encoding
+        self.add_content_to_send(data)
+        self.prepare_data_to_send()
+        writer.write(self.data_to_send)
         await writer.drain()
 
-    def add_send_content(self, data: Union[str, Dict, bytes]) -> None:
-        if self.send_content_type == "text":
-            self.send_content = data.encode(self.send_encoding)
-        elif self.send_content_type == "json":
-            self.send_content = self.encode_json(data)
-        elif self.send_content_type == "binary":
-            self.send_content = data
+    def add_content_to_send(self, data: Union[str, Dict, bytes]) -> None:
+        if self.content_type_to_send == "text":
+            self.content_to_send = data.encode(self.encoding_to_send)
+        elif self.content_type_to_send == "json":
+            self.content_to_send = self.encode_json(data)
+        elif self.content_type_to_send == "binary":
+            self.content_to_send = data
 
-    def prepare_send_data(self) -> None:
-        self.create_send_header()
-        self.get_send_header_len()
-        self.merge_send_data()
+    def prepare_data_to_send(self) -> None:
+        self.create_header_to_send()
+        self.get_header_len_to_send()
+        self.merge_data_to_send()
 
-    def create_send_header(self) -> None:
-        self.send_header = {
-            "content_type": self.send_content_type,
-            "content_encoding": self.send_encoding,
-            "content_length": len(self.send_content),
+    def create_header_to_send(self) -> None:
+        self.header_to_send = {
+            "content_type": self.content_type_to_send,
+            "content_encoding": self.encoding_to_send,
+            "content_length": len(self.content_to_send),
         }
 
-    def get_send_header_len(self) -> None:
-        self.send_header_len = len(self.encode_json(self.send_header))
+    def get_header_len_to_send(self) -> None:
+        self.header_len_to_send = len(self.encode_json(self.header_to_send))
 
-    def merge_send_data(self) -> None:
-        self.send_data = (
-            self.encode_send_header_len()
-            + self.encode_json(self.send_header)
-            + self.send_content
+    def merge_data_to_send(self) -> None:
+        self.data_to_send = (
+            self.encode_header_len_to_send()
+            + self.encode_json(self.header_to_send)
+            + self.content_to_send
         )
 
-    def encode_send_header_len(self) -> bytes:
-        return struct.pack(">H", self.send_header_len)
+    def encode_header_len_to_send(self) -> bytes:
+        return struct.pack(">H", self.header_len_to_send)
 
     @staticmethod
     def decode_json(obj: bytes) -> json:
         return json.loads(obj)
 
     def encode_json(self, data: Dict) -> bytes:
-        return json.dumps(data).encode(self.send_encoding)
+        return json.dumps(data).encode(self.encoding_to_send)

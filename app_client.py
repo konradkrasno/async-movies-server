@@ -16,7 +16,6 @@ if __name__ == "__main__":
         PORT,
         test_request=test_message,
         test_content_type="json",
-        test_encoding="utf-8",
     )
     async_client.run_client()
     async_client.close()

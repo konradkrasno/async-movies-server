@@ -16,11 +16,16 @@ messages = [
     {
         "message": {
             "name": "Konrad",
-            "message": "Hello World",
+            "message": "Hello world",
         },
         "content_type": "json",
-        "encoding": "utf-8",
+        "encoding": "ascii",
     },
+    {
+        "message": b"Hello world",
+        "content_type": "binary",
+        "encoding": "ascii",
+    }
 ]
 
 
@@ -53,3 +58,7 @@ def test_server() -> None:
             }
             assert result == message["message"]
     loop.close()
+
+
+def test_server_with_wrong_data() -> None:
+    pass
