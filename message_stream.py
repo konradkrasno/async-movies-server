@@ -6,7 +6,7 @@ import struct
 
 
 class MessageStream:
-    def __init__(self, response_content_type: str, response_encoding: str):
+    def __init__(self):
         self.request_buffer: bytes = b""
         self.request_content: Union[str, Dict, bytes] = {}
         self.request_header: Dict[str, Union[str, int]] = {}
@@ -14,19 +14,19 @@ class MessageStream:
 
         self.response_data: bytes = b""
         self.response_content: bytes = b""
-        self.response_content_type = response_content_type
+        self.response_content_type: str = ""
         self.response_header: Dict[str, Union[str, int]] = {}
         self.response_header_len: int = int()
-        self.response_encoding: str = response_encoding
+        self.response_encoding: str = ""
 
     async def receive_stream(
         self, reader: asyncio.StreamReader
-    ) -> Union[str, Dict, bytes]:
+    ) -> Tuple[Dict, Union[str, Dict, bytes]]:
         if not self.request_header_len:
             await self.get_request_header_len(reader)
         await self.get_request_header(reader)
         await self.get_request_content(reader)
-        return self.request_content
+        return self.request_header, self.request_content
 
     async def get_request_header_len(self, reader: asyncio.StreamReader) -> None:
         data = await reader.read(2)
@@ -38,14 +38,14 @@ class MessageStream:
         while True:
             data = await reader.read(10)
             # Simulate network latency
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
             print(data.decode())
             self.request_buffer += data
             if len(self.request_buffer) >= self.request_header_len:
                 break
-        header = self.request_buffer[:self.request_header_len]
+        header = self.request_buffer[: self.request_header_len]
         self.request_header = self.decode_json(header)
-        self.request_buffer = self.request_buffer[self.request_header_len:]
+        self.request_buffer = self.request_buffer[self.request_header_len :]
 
     async def get_request_content(self, reader: asyncio.StreamReader) -> None:
         # TODO add avoiding infinite loop when wrong content len
@@ -53,7 +53,7 @@ class MessageStream:
         while True:
             data = await reader.read(10)
             # Simulate network latency
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
             print(data.decode())
             self.request_buffer += data
             if len(self.request_buffer) >= content_len:
@@ -71,8 +71,14 @@ class MessageStream:
             self.request_content = self.request_buffer
 
     async def send_data(
-        self, writer: asyncio.StreamWriter, data: Union[str, Dict, bytes]
+        self,
+        writer: asyncio.StreamWriter,
+        data: Union[str, Dict, bytes],
+        content_type: str,
+        encoding: str,
     ) -> None:
+        self.response_content_type = content_type
+        self.response_encoding = encoding
         self.add_response_content(data)
         self.prepare_response()
         writer.write(self.response_data)

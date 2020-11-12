@@ -7,7 +7,16 @@ PORT = 12345
 
 
 if __name__ == "__main__":
-    test_text = "Well, I'm the crawlin' king snake And I rule my den I'm the crawlin' king snake And I rule my den"
-    async_client = AsyncClient(HOST, PORT, test_data=test_text)
+    test_message = {
+        "name": "Jim",
+        "message": "Well, I'm the crawlin' king snake And I rule my den I'm the crawlin' king snake And I rule my den",
+    }
+    async_client = AsyncClient(
+        HOST,
+        PORT,
+        test_request=test_message,
+        test_content_type="json",
+        test_encoding="utf-8",
+    )
     async_client.run_client()
     async_client.close()

@@ -26,13 +26,16 @@ class AsyncServer:
     def get_addr(server: asyncio.AbstractServer) -> str:
         return server.sockets[0].getsockname() if server.sockets else "unknown"
 
+    @staticmethod
     async def handle_connection(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         ctx = {"addr": writer.get_extra_info("peername")}
-        message = MessageStream(response_content_type="text", response_encoding="utf-8")
-        request = await message.receive_stream(reader)
-        await message.send_data(writer, request)
+        message = MessageStream()
+        header, request = await message.receive_stream(reader)
+        await message.send_data(
+            writer, request, header["content_type"], header["content_encoding"]
+        )
         print("Close the client socket")
         writer.close()
 

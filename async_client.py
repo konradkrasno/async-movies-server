@@ -11,7 +11,9 @@ class AsyncClient:
         host: str,
         port: int,
         loop: asyncio.AbstractEventLoop = None,
-        test_data: str = "",
+        test_request: Union[str, Dict, bytes] = None,
+        test_content_type: str = "",
+        test_encoding: str = "",
     ):
         self.host = host
         self.port = port
@@ -19,26 +21,37 @@ class AsyncClient:
             self.loop = asyncio.get_event_loop()
         else:
             self.loop = loop
-        self._test_data = test_data
+        self._test_request = test_request
+        self._test_content_type = test_content_type
+        self._test_encoding = test_encoding
 
-    async def send_request(self) -> str:
+    async def send_request(self) -> Tuple[Dict, Union[str, Dict, bytes]]:
         reader, writer = await asyncio.open_connection(self.host, self.port)
 
-        if self._test_data:
-            data = self._test_data
+        if self._test_request:
+            data = self._test_request
         else:
             data = input()
-        print(f"Sending: {data}")
+        if self._test_content_type:
+            content_type = self._test_content_type
+        else:
+            content_type = "text"
+        if self._test_encoding:
+            encoding = self._test_encoding
+        else:
+            encoding = "utf-8"
 
-        message = MessageStream(response_content_type="text", response_encoding="utf-8")
-        await message.send_data(writer, data)
-        answer = await message.receive_stream(reader)
+        print(f"Sending: {data}")
+        message = MessageStream()
+        await message.send_data(writer, data, content_type, encoding)
+        header, answer = await message.receive_stream(reader)
+        print("header:", header)
         print("answer:", answer)
         print("Close the socket")
         writer.close()
-        return answer
+        return header, answer
 
-    def run_client(self) -> str:
+    def run_client(self) -> Tuple[Dict, Union[str, Dict, bytes]]:
         return self.loop.run_until_complete(self.send_request())
 
     def close(self) -> None:
