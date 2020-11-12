@@ -29,9 +29,9 @@ class AsyncClient:
         reader, writer = await asyncio.open_connection(self.host, self.port)
 
         if self._test_request:
-            data = self._test_request
+            request = self._test_request
         else:
-            data = input()
+            request = input()
         if self._test_content_type:
             content_type = self._test_content_type
         else:
@@ -41,9 +41,8 @@ class AsyncClient:
         else:
             encoding = "utf-8"
 
-        print(f"Sending: {data}")
         message = MessageStream()
-        await message.send_stream(writer, data, content_type, encoding)
+        await message.send_stream(writer, request, content_type, encoding)
         header, answer = await message.receive_stream(reader)
         print("header:", header)
         print("answer:", answer)

@@ -30,14 +30,18 @@ class AsyncServer:
     async def handle_connection(
         reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        ctx = {"addr": writer.get_extra_info("peername")}
+        addr = writer.get_extra_info("peername")
         message = MessageStream()
-        header, request = await message.receive_stream(reader)
-        await message.send_stream(
-            writer, request, header["content_type"], header["content_encoding"]
-        )
-        print("Close the client socket")
-        writer.close()
+        try:
+            header, request = await message.receive_stream(reader)
+        except (ConnectionResetError, ValueError) as e:
+            print(f"An error occurred: {e} when address: {addr} connect.")
+        else:
+            await message.send_stream(
+                writer, request, header["content_type"], header["content_encoding"]
+            )
+            print("Close the client socket")
+            writer.close()
 
     def run_server(self) -> asyncio.AbstractServer:
         server = self.loop.run_until_complete(self.start_server())

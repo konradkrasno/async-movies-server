@@ -69,6 +69,8 @@ class MessageStream:
             self.recv_content = self.decode_json(self.recv_buffer)
         elif content_type == "binary":
             self.recv_content = self.recv_buffer
+        else:
+            self.recv_content = "Unknown received content type."
 
     async def send_stream(
         self,
@@ -77,20 +79,28 @@ class MessageStream:
         content_type: str,
         encoding: str = "utf-8",
     ) -> None:
-        self.content_type_to_send = content_type
-        self.encoding_to_send = encoding
-        self.add_content_to_send(data)
+        self.validate_input(writer, data, content_type, encoding)
         self.prepare_data_to_send()
+        print(f"Sending: {self.content_to_send}")
         writer.write(self.data_to_send)
         await writer.drain()
 
-    def add_content_to_send(self, data: Union[str, Dict, bytes]) -> None:
-        if self.content_type_to_send == "text":
-            self.content_to_send = data.encode(self.encoding_to_send)
-        elif self.content_type_to_send == "json":
+    def validate_input(self, writer: asyncio.StreamWriter, data: Union[str, Dict, bytes], content_type: str, encoding: str) -> None:
+        if encoding not in ("utf-8", "ascii"):
+            writer.close()
+            raise ValueError("Wrong encoding! Available encodings: utf-8, ascii.")
+        self.encoding_to_send = encoding
+
+        if type(data) in (dict, json) and content_type == "json":
             self.content_to_send = self.encode_json(data)
-        elif self.content_type_to_send == "binary":
+        elif type(data) == str and content_type == "text":
+            self.content_to_send = data.encode(self.encoding_to_send)
+        elif type(data) == bytes and content_type == "binary":
             self.content_to_send = data
+        else:
+            writer.close()
+            raise ValueError(f"Wrong value of data: {data} or content_type: {content_type}.")
+        self.content_type_to_send = content_type
 
     def prepare_data_to_send(self) -> None:
         self.create_header_to_send()

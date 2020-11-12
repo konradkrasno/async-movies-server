@@ -3,35 +3,19 @@ import asyncio
 import json
 
 from async_client import AsyncClient
+from test_data import valid_data, wrong_data
 
 HOST = "127.0.0.1"
 PORT = 12345
 
-messages = [
-    {
-        "message": "hey, what's up?",
-        "content_type": "text",
-        "encoding": "utf-8",
-    },
-    {
-        "message": {
-            "name": "Konrad",
-            "message": "Hello world",
-        },
-        "content_type": "json",
-        "encoding": "ascii",
-    },
-    {
-        "message": b"Hello world",
-        "content_type": "binary",
-        "encoding": "ascii",
-    }
-]
+
+@pytest.fixture
+def loop() -> asyncio.AbstractEventLoop:
+    return asyncio.get_event_loop()
 
 
-def test_server() -> None:
-    loop = asyncio.get_event_loop()
-    for message in messages:
+def test_server_with_valid_data(loop) -> None:
+    for message in valid_data:
         async_client = AsyncClient(
             HOST,
             PORT,
@@ -57,8 +41,22 @@ def test_server() -> None:
                 else len(message["message"]),
             }
             assert result == message["message"]
-    loop.close()
 
 
-def test_server_with_wrong_data() -> None:
-    pass
+def test_server_with_wrong_data(loop) -> None:
+    for message in wrong_data:
+        async_client = AsyncClient(
+            HOST,
+            PORT,
+            loop=loop,
+            test_request=message["message"],
+            test_content_type=message["content_type"],
+            test_encoding=message["encoding"],
+        )
+        try:
+            with pytest.raises(ValueError) as e:
+                async_client.run_client()
+        except ConnectionRefusedError:
+            raise ConnectionRefusedError(
+                "Server is not running. Run start_server before start tests."
+            )
