@@ -17,7 +17,7 @@ class MessageStream:
         self.response_content_type: str = ""
         self.response_header: Dict[str, Union[str, int]] = {}
         self.response_header_len: int = int()
-        self.response_encoding: str = ""
+        self.response_encoding: Union[str, None] = None
 
     async def receive_stream(
         self, reader: asyncio.StreamReader
@@ -34,30 +34,31 @@ class MessageStream:
             self.request_header_len = struct.unpack(">H", data)[0]
 
     async def get_request_header(self, reader: asyncio.StreamReader) -> None:
-        # TODO add avoiding infinite loop when wrong header len
+        if self.request_header_len <= 0:
+            raise ValueError("Header length must be greater than 0!")
+
         while True:
+            if len(self.request_buffer) >= self.request_header_len:
+                break
             data = await reader.read(10)
             # Simulate network latency
             await asyncio.sleep(0.1)
             print(data.decode())
             self.request_buffer += data
-            if len(self.request_buffer) >= self.request_header_len:
-                break
         header = self.request_buffer[: self.request_header_len]
         self.request_header = self.decode_json(header)
         self.request_buffer = self.request_buffer[self.request_header_len :]
 
     async def get_request_content(self, reader: asyncio.StreamReader) -> None:
-        # TODO add avoiding infinite loop when wrong content len
         content_len = self.request_header["content_length"]
         while True:
+            if len(self.request_buffer) >= content_len:
+                break
             data = await reader.read(10)
             # Simulate network latency
             await asyncio.sleep(0.1)
             print(data.decode())
             self.request_buffer += data
-            if len(self.request_buffer) >= content_len:
-                break
         self.decode_request_content()
         self.request_buffer = self.request_buffer[content_len:]
 
@@ -75,7 +76,7 @@ class MessageStream:
         writer: asyncio.StreamWriter,
         data: Union[str, Dict, bytes],
         content_type: str,
-        encoding: str,
+        encoding: Union[str, None],
     ) -> None:
         self.response_content_type = content_type
         self.response_encoding = encoding
