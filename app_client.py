@@ -1,21 +1,16 @@
 import sys
 
 from async_client import AsyncClient
-
-HOST = "127.0.0.1"
-PORT = 12345
+from app_server import HOST, PORT
 
 
 if __name__ == "__main__":
-    test_message = {
-        "name": "Jim",
-        "message": "Well, I'm the crawlin' king snake And I rule my den I'm the crawlin' king snake And I rule my den",
-    }
+    test_message = "get_all_data"
     async_client = AsyncClient(
         HOST,
         PORT,
         test_request=test_message,
-        test_content_type="json",
+        test_content_type="text",
     )
     async_client.run_client()
     async_client.close()

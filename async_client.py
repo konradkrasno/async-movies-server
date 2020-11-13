@@ -53,7 +53,7 @@ class AsyncClient:
             return header, answer
         finally:
             message.close()
-        return {}, ""
+        return dict(), str()
 
     def run_client(self) -> Tuple[Dict, Union[str, Dict, bytes]]:
         return self.loop.run_until_complete(self.send_request())

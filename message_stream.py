@@ -39,7 +39,7 @@ class MessageStream:
         while True:
             if len(self.recv_buffer) >= self.recv_header_len:
                 break
-            data = await self.reader.read(10)
+            data = await self.reader.read(100)
             # Simulate network latency
             await asyncio.sleep(0.1)
             print(data.decode())
@@ -53,7 +53,7 @@ class MessageStream:
         while True:
             if len(self.recv_buffer) >= content_len:
                 break
-            data = await self.reader.read(10)
+            data = await self.reader.read(100)
             # Simulate network latency
             await asyncio.sleep(0.1)
             print(data.decode())

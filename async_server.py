@@ -3,12 +3,15 @@ from typing import *
 import asyncio
 
 from message_stream import MessageStream
+from request_manager import RequestManager
 
 
 class AsyncServer:
-    def __init__(self, host: str, port: int, loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, host: str, port: int, dsn: str, loop: asyncio.AbstractEventLoop = None):
         self.host = host
         self.port = port
+        self.req_man = RequestManager(dsn)
+        self.dsn = dsn
         if loop is None:
             self.loop = asyncio.get_event_loop()
         else:
@@ -26,9 +29,8 @@ class AsyncServer:
     def get_addr(server: asyncio.AbstractServer) -> str:
         return server.sockets[0].getsockname() if server.sockets else "unknown"
 
-    @staticmethod
     async def handle_connection(
-        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         addr = writer.get_extra_info("peername")
         message = MessageStream(reader, writer)
@@ -37,11 +39,13 @@ class AsyncServer:
         except (ConnectionResetError, ValueError) as e:
             print(f"An error occurred: {e} when address: {addr} connect.")
         else:
-            await message.send_stream(
-                request, header["content_type"], header["content_encoding"]
-            )
+            response = await self.get_answer_from_db(request)
+            await message.send_stream(response, "json", "utf-8")
         finally:
             message.close()
+
+    async def get_answer_from_db(self, request: Union[str, Dict, bytes]) -> Dict:
+        return await self.req_man.entrypoint(request)
 
     def run_server(self) -> asyncio.AbstractServer:
         server = self.loop.run_until_complete(self.start_server())
