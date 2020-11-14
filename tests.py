@@ -5,11 +5,7 @@ import json
 from async_client import AsyncClient
 from test_data import valid_data, wrong_data
 from request_manager import RequestManager
-from app_server import HOST, PORT
-
-with open("secure.json", "r") as file:
-    secure = json.load(file)
-DSN = f'postgres://postgres:{secure["PG_PASSWORD"]}@172.17.0.2/postgres'
+from settings import SERVER
 
 server_running_required = pytest.mark.skipif(False, reason="Server running required.")
 
@@ -23,8 +19,8 @@ def loop() -> asyncio.AbstractEventLoop:
 def test_server_with_valid_data(loop) -> None:
     for message in valid_data:
         async_client = AsyncClient(
-            HOST,
-            PORT,
+            SERVER["HOST"],
+            SERVER["PORT"],
             loop=loop,
             test_request=message["message"],
             test_content_type=message["content_type"],
@@ -53,8 +49,8 @@ def test_server_with_valid_data(loop) -> None:
 def test_server_with_wrong_data(loop) -> None:
     for message in wrong_data:
         async_client = AsyncClient(
-            HOST,
-            PORT,
+            SERVER["HOST"],
+            SERVER["PORT"],
             loop=loop,
             test_request=message["message"],
             test_content_type=message["content_type"],
@@ -72,7 +68,7 @@ def test_server_with_wrong_data(loop) -> None:
 def test_request_manager_with_valid_request(loop):
     # TODO add test database
     request = "print_all_users"
-    req_man = RequestManager(DSN)
+    req_man = RequestManager()
     response = loop.run_until_complete(req_man.entrypoint(request))
     # TODO add assertion
     print("response:", response)
@@ -81,6 +77,6 @@ def test_request_manager_with_valid_request(loop):
 
 def test_request_manager_with_unknown_request(loop):
     request = "unknown_request"
-    req_man = RequestManager(DSN)
+    req_man = RequestManager()
     response = loop.run_until_complete(req_man.entrypoint(request))
     assert response == {"answer": "Unknown request"}

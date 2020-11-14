@@ -7,11 +7,10 @@ from request_manager import RequestManager
 
 
 class AsyncServer:
-    def __init__(self, host: str, port: int, dsn: str, loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, host: str, port: int, loop: asyncio.AbstractEventLoop = None):
         self.host = host
         self.port = port
-        self.req_man = RequestManager(dsn)
-        self.dsn = dsn
+        self.req_man = RequestManager()
         if loop is None:
             self.loop = asyncio.get_event_loop()
         else:

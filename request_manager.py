@@ -2,16 +2,19 @@ from typing import *
 
 import asyncpg
 import asyncio
-import json
 
-with open("secure.json", "r") as file:
-    secure = json.load(file)
+from settings import DATABASE
 
 
 class RequestManager:
-    def __init__(self, dsn: str):
-        self.dsn = dsn
-        self.encoding = 'utf-8'
+    def __init__(self):
+        self.dsn = "postgres://%s:%s@%s/%s" % (
+            DATABASE["USER"],
+            DATABASE["PASSWORD"],
+            DATABASE["HOST"],
+            DATABASE["NAME"],
+        )
+        self.encoding = "utf-8"
 
     @property
     def request_manager(self) -> Dict[str, Callable]:
@@ -36,9 +39,7 @@ class RequestManager:
 
     async def entrypoint(self, request: Any) -> Dict:
         request = self.process_request(request)
-        async with asyncpg.create_pool(
-            self.dsn, password=secure["PG_PASSWORD"]
-        ) as db:
+        async with asyncpg.create_pool(self.dsn) as db:
             return await self.handle_request(db, request)
 
     @staticmethod

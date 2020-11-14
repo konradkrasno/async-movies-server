@@ -1,19 +1,22 @@
 from typing import *
 
-import json
 import sqlalchemy
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from settings import DATABASE
 from models import Base, User
 
-with open("secure.json", "r") as file:
-    secure = json.load(file)
-DSN = f'postgresql+psycopg2://postgres:{secure["PG_PASSWORD"]}@172.17.0.2/postgres'
 
-
-def connect(dsn: str) -> sqlalchemy.engine:
-    return create_engine(DSN, echo=False)
+def connect() -> sqlalchemy.engine:
+    dsn = "postgresql+psycopg2://%s:%s@%s/%s" % (
+        DATABASE["USER"],
+        DATABASE["PASSWORD"],
+        DATABASE["HOST"],
+        DATABASE["NAME"],
+    )
+    return create_engine(dsn, echo=False)
 
 
 def create_tables(engine: sqlalchemy.engine) -> None:
@@ -25,14 +28,17 @@ def start_session(engine: sqlalchemy.engine):
 
 
 def add_data(session) -> None:
-    ed_user = User(name='ed', fullname='Ed Jones', nickname='edsnickname')
+    ed_user = User(name="ed", fullname="Ed Jones", nickname="edsnickname")
     session.add(ed_user)
-    our_user = session.query(User).filter_by(name='ed').first()
+    our_user = session.query(User).filter_by(name="ed").first()
     print(our_user)
-    session.add_all([
-        User(name='wendy', fullname='Wendy Williams', nickname='windy'),
-        User(name='mary', fullname='Mary Contrary', nickname='mary'),
-        User(name='fred', fullname='Fred Flintstone', nickname='freddy')])
+    session.add_all(
+        [
+            User(name="wendy", fullname="Wendy Williams", nickname="windy"),
+            User(name="mary", fullname="Mary Contrary", nickname="mary"),
+            User(name="fred", fullname="Fred Flintstone", nickname="freddy"),
+        ]
+    )
     session.commit()
 
 
@@ -41,8 +47,8 @@ def get_all_data(session) -> None:
         print(instance.name, instance.fullname)
 
 
-if __name__ == '__main__':
-    engine = connect(DSN)
+if __name__ == "__main__":
+    engine = connect()
     # add check if tables not exists
     # create_tables(engine)
     session = start_session(engine)
