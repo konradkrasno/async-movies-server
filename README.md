@@ -1,9 +1,10 @@
 # async-movies-server
-This is client-server application based on asyncio. It has own protocol 
-for handling sending and receiving messages. Protocol attends text, json and
-binary request. The application is connected with database and can response with 
-data queried from database. \
-It will be used for receiving the set of recommended 
+This is the client-server application based on asyncio. It has its own 
+protocol for handling sending and receiving messages. This protocol 
+attends text, json, and binary request. The application is connected 
+to the database. The server can respond with data queried from the 
+database. \
+The application will be used for sending the set of the recommended 
 movies based on given movies.
 
 The application is based on:
