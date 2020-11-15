@@ -29,9 +29,19 @@ SERVER = {
 }
 
 # Database
-DATABASE = {
-    "NAME": "postgres",
-    "USER": "postgres",
-    "PASSWORD": secure["PG_PASSWORD"],
-    "HOST": "172.17.0.4",
+DATABASES = {
+    "default": {
+        "NAME": "postgres",
+        "USER": "postgres",
+        "PASSWORD": secure["PG_PASSWORD"],
+        "HOST": "localhost",
+        "PORT": 5432,
+    },
+    "test": {
+        "NAME": "test",
+        "USER": "postgres",
+        "PASSWORD": secure["PG_PASSWORD"],
+        "HOST": "localhost",
+        "PORT": 5432,
+    },
 }

@@ -3,17 +3,14 @@ from typing import *
 import asyncpg
 import asyncio
 
-from settings import DATABASE
+from settings import DATABASES
 
 
 class RequestManager:
-    def __init__(self):
-        self.dsn = "postgres://%s:%s@%s/%s" % (
-            DATABASE["USER"],
-            DATABASE["PASSWORD"],
-            DATABASE["HOST"],
-            DATABASE["NAME"],
-        )
+    dsn_format = "postgresql://{USER}:{PASSWORD}@{HOST}:{PORT}/{NAME}"
+
+    def __init__(self, db_config: Dict = DATABASES["default"]):
+        self.dsn = self.dsn_format.format(**db_config)
         self.encoding = "utf-8"
 
     @property
