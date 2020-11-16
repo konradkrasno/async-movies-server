@@ -1,3 +1,5 @@
+""" Provides tests of working server and client. """
+
 import pytest
 import asyncio
 import json
@@ -12,6 +14,7 @@ def loop() -> asyncio.AbstractEventLoop:
     return asyncio.get_event_loop()
 
 
+@pytest.mark.server
 def test_server_with_valid_data(loop) -> None:
     for message in valid_data:
         async_client = AsyncClient(
@@ -41,6 +44,7 @@ def test_server_with_valid_data(loop) -> None:
             assert result == message["message"]
 
 
+@pytest.mark.server
 def test_server_with_wrong_data(loop) -> None:
     for message in wrong_data:
         async_client = AsyncClient(
