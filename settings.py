@@ -31,7 +31,7 @@ SERVER = {
 # Database
 DATABASES = {
     "default": {
-        "NAME": "postgres",
+        "NAME": "movies-db",
         "USER": "postgres",
         "PASSWORD": secure["PG_PASSWORD"],
         "HOST": "localhost",
