@@ -1,3 +1,5 @@
+""" Contains models for movies-database. """
+
 from typing import *
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -59,11 +61,14 @@ class Language(Base):
         return "<Language(name='%s')>" % (self.name,)
 
 
-genre_association_table = Table(
-    "association",
+movie_metadata_association_table = Table(
+    "movie_metadata_association",
     Base.metadata,
     Column("movies_metadata", Integer, ForeignKey("movies_metadata.id")),
     Column("genres", Integer, ForeignKey("genres.id")),
+    Column("production_companies", Integer, ForeignKey("production_companies.id")),
+    Column("countries", Integer, ForeignKey("countries.id")),
+    Column("languages", Integer, ForeignKey("languages.id")),
 )
 
 
@@ -73,19 +78,25 @@ class MovieMetadata(Base):
     id = Column(Integer, primary_key=True)
     adult = Column(Boolean)
     budget = Column(Integer)
-    genres = relationship("Genre", secondary=genre_association_table)
+    genres = relationship("Genre", secondary=movie_metadata_association_table)
     homepage = Column(String)
     original_language = Column(String)
     original_title = Column(String)
     overview = Column(Text)
     popularity = Column(Float)
     poster_path = Column(String)
-    # production_companies = relationship("ProductionCompany")
-    # production_countries = relationship("Country")
+    production_companies = relationship(
+        "ProductionCompany", secondary=movie_metadata_association_table
+    )
+    production_countries = relationship(
+        "Country", secondary=movie_metadata_association_table
+    )
     release_date = Column(Date)
     revenue = Column(Integer)  # TODO maybe BigInteger
     runtime = Column(Integer)
-    # spoken_languages = relationship("Language")
+    spoken_languages = relationship(
+        "Language", secondary=movie_metadata_association_table
+    )
     tagline = Column(Text)
     title = Column(String)
     vote_average = Column(Float)

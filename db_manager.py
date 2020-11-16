@@ -1,3 +1,5 @@
+""" Provides classes for creating, managing, and dropping test database and movies-database. """
+
 from typing import *
 
 from sqlalchemy import create_engine
@@ -16,6 +18,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class Config:
+    """ Provides configuration data for connecting to the database. """
+
     dsn_format = "postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{NAME}"
 
     def __init__(self, db_config: Dict):
@@ -27,7 +31,7 @@ class Config:
 
 
 class TempDB(Config):
-    """ Creates database for testing purposes. """
+    """ Creates the database for testing purposes. """
 
     def __init__(self):
         super().__init__(db_config=DATABASES["default"])
@@ -77,17 +81,6 @@ class TempDB(Config):
             logging.error("Database '%s' does not exist." % DATABASES["test"]["NAME"])
 
 
-def temp_db(func: callable) -> callable:
-    """ Decorator for creating database for testing purpose. """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> None:
-        with TempDB():
-            func(*args, **kwargs)
-
-    return wrapper
-
-
 class HandleSession:
     """ Context manager for handling database sessions. """
 
@@ -123,6 +116,8 @@ def open_session(engine: sqlalchemy.engine.Engine):
 
 
 class DBManager(Config):
+    """ Handles managing access to the database. """
+
     def __init__(self, db_config: Dict = DATABASES["default"]):
         super().__init__(db_config)
         self.add_record = open_session(self.engine_default)(self.add_record)
@@ -131,7 +126,6 @@ class DBManager(Config):
         )
 
     def create_tables(self) -> None:
-        # TODO test it
         with self.engine_default.connect() as conn:
             logging.info("Creating tables.")
             models.Base.metadata.create_all(conn)
@@ -147,6 +141,10 @@ class DBManager(Config):
             genre = models.Genre(name=name)
             genres.append(genre)
             yield genre
+
+        yield models.ProductionCompany(name="Warner Bros")
+        yield models.Country(iso_3166_1=20, name="US")
+        yield models.Language(iso_639_1=15, name="English")
 
         yield models.MovieMetadata(
             id=movie_id,
@@ -182,3 +180,8 @@ class DBManager(Config):
     #     for instance in session.query(model).order_by(model.id):
     #         session.delete(instance)
     #     session.commit()
+
+
+if __name__ == "__main__":
+    db_man = DBManager()
+    # db_man.create_tables()

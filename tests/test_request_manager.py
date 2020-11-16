@@ -1,4 +1,4 @@
-import pytest
+""" Provides tests for request_manager module. """
 
 from request_manager import RequestManager
 
