@@ -1,3 +1,5 @@
+""" Implementation of the client. """
+
 from typing import *
 
 import asyncio

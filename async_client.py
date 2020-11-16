@@ -1,3 +1,5 @@
+""" Implementation of the server. """
+
 from typing import *
 
 import asyncio

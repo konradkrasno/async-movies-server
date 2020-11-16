@@ -1,3 +1,6 @@
+""" Creates and connects the client with the server,
+    after that it sends the specified request to the server. """
+
 import sys
 
 from async_client import AsyncClient

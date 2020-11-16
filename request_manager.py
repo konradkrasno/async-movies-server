@@ -1,3 +1,5 @@
+""" Handles requests to the database. """
+
 from typing import *
 
 import asyncpg

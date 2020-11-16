@@ -1,3 +1,5 @@
+""" Protocol for handling receiving and sending data between sockets. """
+
 from typing import *
 
 import asyncio

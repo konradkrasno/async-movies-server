@@ -1,3 +1,5 @@
+""" Creates and starts running the server. """
+
 import sys
 
 from async_server import AsyncServer
