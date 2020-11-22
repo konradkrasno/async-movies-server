@@ -20,7 +20,7 @@ from tests.test_db_manager import temp_db
 
 @pytest.fixture
 def data() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    return upload_csv()
+    return upload_csv("archive/test")
 
 
 def test_load_to_json(data):

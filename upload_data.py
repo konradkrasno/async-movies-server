@@ -39,14 +39,14 @@ def load_to_json(string: str) -> Dict:
     return result
 
 
-def upload_csv() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def upload_csv(directory: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """ Reads data from csv files. """
 
     movies_metadata = pd.read_csv(
-        BASE_DIR / "archive/movies_metadata.csv", low_memory=False
+        BASE_DIR / "{}/movies_metadata.csv".format(directory), low_memory=False
     )
-    movies_credits = pd.read_csv(BASE_DIR / "archive/credits.csv")
-    movies_keywords = pd.read_csv(BASE_DIR / "archive/keywords.csv")
+    movies_credits = pd.read_csv(BASE_DIR / "{}/credits.csv".format(directory))
+    movies_keywords = pd.read_csv(BASE_DIR / "{}/keywords.csv".format(directory))
 
     return movies_metadata.values, movies_credits.values, movies_keywords.values
 
@@ -231,5 +231,5 @@ if __name__ == "__main__":
     db_man = DBManager()
     db_man.create_tables()
     engine = db_man.default_db_engine
-    data = upload_csv()
+    data = upload_csv("archive")
     open_session(engine, upload_data_to_db, data)
