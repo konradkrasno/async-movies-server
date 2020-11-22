@@ -8,13 +8,12 @@ import re
 import json
 
 import models
-import datetime
 
-from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 from handle_sessions import open_session
 from db_manager import DBManager
 from settings import BASE_DIR
+from itertools import zip_longest
 
 
 def make_convertible_to_json(string: str) -> str:
@@ -25,6 +24,7 @@ def make_convertible_to_json(string: str) -> str:
         string = string.replace("'{}'".format(key[1]), '"{}"'.format(key[1]))
     string = re.sub("\\'", '"', string)
     string = re.sub(r'(\w+)"(\w+)', r"\1\2", string)
+    string = string.replace("None", '""')
     return string
 
 
@@ -147,16 +147,53 @@ def upload_movies_metadata(session: Session, row: np.ndarray) -> Iterator:
         yield record
 
 
+def prepare_actor_or_crew_member_data(data: Dict, movie_id: int) -> Dict:
+    """ Prepares data for creating an instance od Actor or CrewMember model. """
+
+    return {
+        "id": data["id"],
+        "name": data["name"],
+        "gender": data["gender"],
+        "profile_path": data["profile_path"],
+        "movie_id": movie_id,
+    }
+
+
+def add_actors_or_crew(
+    session: Session,
+    data: str,
+    movie_id: int,
+    model: Union[models.Actor, models.CrewMember],
+) -> Iterator:
+    """ Creates an instances of Actor or CrewMember model. """
+
+    for item in load_to_json(data):
+        data = prepare_actor_or_crew_member_data(item, movie_id)
+        record = model.create_or_update(session, **data)
+        yield record
+
+
 def upload_movies_credits(session: Session, row: np.ndarray) -> Iterator:
     """ Creates and yields instances of Credits and related models from data from the row. """
 
-    pass
+    movie_id = row[2]
+    actors = list()
+    for actor in add_actors_or_crew(session, row[0], movie_id, models.Actor):
+        actors.append(actor)
+        yield actor
+    crew_members = list()
+    for member in add_actors_or_crew(session, row[1], movie_id, models.CrewMember):
+        crew_members.append(member)
+        yield member
+    yield models.Credits.get_or_create(
+        session, id=movie_id, actors=actors, crew_members=crew_members
+    )
 
 
 def upload_movies_keywords(session: Session, row: np.ndarray) -> Iterator:
     """ Creates and yields instances of Keywords from data from the row. """
 
-    pass
+    yield models.Keywords.get_or_create(session, id=row[0], keywords=row[1])
 
 
 def upload_data_to_db(
@@ -166,8 +203,24 @@ def upload_data_to_db(
 
     for row in data[0]:
         yield from upload_movies_metadata(session, row)
+    for row in data[1]:
         yield from upload_movies_credits(session, row)
+    for row in data[2]:
         yield from upload_movies_keywords(session, row)
+
+    # TODO finish adding data to Movie model
+
+    # for (movie_metadata, movie_credits, movie_keywords) in zip_longest(*data):
+    #     metadata = upload_movies_metadata(session, movie_metadata)
+    #     _credits = upload_movies_credits(session, movie_credits)
+    #     keywords = upload_movies_keywords(session, movie_keywords)
+    #     yield models.Movie.get_or_create(
+    #         session,
+    #         id=metadata.id,
+    #         movies_metadata=metadata,
+    #         credits=_credits,
+    #         keywords=keywords,
+    #     )
 
 
 # if __name__ == "__main__":

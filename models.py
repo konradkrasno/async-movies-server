@@ -33,8 +33,12 @@ class Genre(Base):
         return "<Genre(name='%s')>" % (self.name,)
 
     @classmethod
+    def get(cls, session: Session, name: str) -> Base:
+        return session.query(cls).filter(cls.name == name).first()
+
+    @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.name == kwargs["name"]).first()
+        query = cls.get(session, kwargs["name"])
         if query:
             return query
         return cls(**kwargs)
@@ -50,8 +54,12 @@ class ProductionCompany(Base):
         return "<ProductionCompany(name='%s')>" % (self.name,)
 
     @classmethod
+    def get(cls, session: Session, name: str) -> Base:
+        return session.query(cls).filter(cls.name == name).first()
+
+    @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.name == kwargs["name"]).first()
+        query = cls.get(session, kwargs["name"])
         if query:
             return query
         return cls(**kwargs)
@@ -68,19 +76,23 @@ class Country(Base):
         return "<Country(name='%s')>" % (self.name,)
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = (
+    def get(cls, session: Session, iso_3166_1: str, name: str) -> Base:
+        return (
             session.query(cls)
             .filter(
                 or_(
-                    cls.iso_3166_1 == kwargs["iso_3166_1"],
-                    cls.name == kwargs["name"],
+                    cls.iso_3166_1 == iso_3166_1,
+                    cls.name == name,
                 )
             )
             .first()
         )
+
+    @classmethod
+    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+        query = cls.get(session, kwargs["iso_3166_1"], kwargs["name"])
         if query:
-                return query
+            return query
         return cls(**kwargs)
 
 
@@ -95,16 +107,21 @@ class Language(Base):
         return "<Language(name='%s')>" % (self.name,)
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = (
+    def get(cls, session: Session, iso_639_1: str, name: str) -> Base:
+        return (
             session.query(cls)
             .filter(
                 or_(
-                    cls.iso_639_1 == kwargs["iso_639_1"], cls.name == kwargs["name"]
+                    cls.iso_639_1 == iso_639_1,
+                    cls.name == name,
                 )
             )
             .first()
         )
+
+    @classmethod
+    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+        query = cls.get(session, kwargs["iso_639_1"], kwargs["name"])
         if query:
             return query
         return cls(**kwargs)
@@ -149,8 +166,8 @@ class MovieMetadata(Base):
     title = Column(String)
     vote_average = Column(Float)
     vote_count = Column(Integer)
-    # movie_id = Column(Integer, ForeignKey("movie.id"))
-    # movie = relationship("Movie", back_populates="movies_metadata")
+    movies_id = Column(Integer, ForeignKey("movies.id"))
+    movies = relationship("Movie", back_populates="movies_metadata")
 
     def __repr__(self):
         return "<MovieMetadata(title='%s')>" % (self.title,)
@@ -159,8 +176,12 @@ class MovieMetadata(Base):
         return {**self}
 
     @classmethod
+    def get(cls, session: Session, _id: int) -> Base:
+        return session.query(cls).filter(cls.id == _id).first()
+
+    @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.id == kwargs["id"]).first()
+        query = cls.get(session, kwargs["id"])
         if query:
             return query
         return cls(**kwargs)
@@ -187,11 +208,21 @@ class Actor(Base):
         return "<Actor(name='%s')>" % (self.name,)
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.id == kwargs["id"]).first()
+    def get(cls, session: Session, _id: int) -> Base:
+        return session.query(cls).filter(cls.id == _id).first()
+
+    @classmethod
+    def create_or_update(cls, session: Session, **kwargs: Any) -> Base:
+        query = cls.get(session, kwargs["id"])
+        movie_id = kwargs.pop("movie_id")
+        movie_metadata = MovieMetadata.get(session, movie_id)
         if query:
-            return query
-        return cls(**kwargs)
+            record = query
+        else:
+            record = cls(**kwargs)
+        if movie_metadata:
+            record.movie_ids.append(movie_metadata)
+        return record
 
 
 crew_members_association_table = Table(
@@ -215,19 +246,29 @@ class CrewMember(Base):
         return "<CrewMember(name='%s')>" % (self.name,)
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.id == kwargs["id"]).first()
+    def get(cls, session: Session, _id: int) -> Base:
+        return session.query(cls).filter(cls.id == _id).first()
+
+    @classmethod
+    def create_or_update(cls, session: Session, **kwargs: Any) -> Base:
+        query = cls.get(session, kwargs["id"])
+        movie_id = kwargs.pop("movie_id")
+        movie_metadata = MovieMetadata.get(session, movie_id)
         if query:
-            return query
-        return cls(**kwargs)
+            record = query
+        else:
+            record = cls(**kwargs)
+        if movie_metadata:
+            record.movie_ids.append(movie_metadata)
+        return record
 
 
 credits_association_table = Table(
     "credits_association",
     Base.metadata,
     Column("credits", Integer, ForeignKey("credits.id")),
-    Column("actors",  Integer, ForeignKey("actors.id")),
-    Column("crew_members", Integer, ForeignKey("crew_members.id"))
+    Column("actors", Integer, ForeignKey("actors.id")),
+    Column("crew_members", Integer, ForeignKey("crew_members.id")),
 )
 
 
@@ -235,17 +276,21 @@ class Credits(Base):
     __tablename__ = "credits"
 
     id = Column(Integer, primary_key=True)
-    cast = relationship("actors", secondary=credits_association_table)
-    crew = relationship("crew_members", secondary=credits_association_table)
-    movie_id = Column(Integer, ForeignKey("movie.id"))
-    movie = relationship("Movie", back_populates="credits")
+    actors = relationship("Actor", secondary=credits_association_table)
+    crew_members = relationship("CrewMember", secondary=credits_association_table)
+    movies_id = Column(Integer, ForeignKey("movies.id"))
+    movies = relationship("Movie", back_populates="credits")
 
     def __repr__(self):
-        return "<Credits(cast='%s', crew='%s')>" % (self.cast, self.crew)
+        return "<Credits(actors='%s', crew='%s')>" % (self.actors, self.crew)
+
+    @classmethod
+    def get(cls, session: Session, _id: int) -> Base:
+        return session.query(cls).filter(cls.id == _id).first()
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.id == kwargs["id"]).first()
+        query = cls.get(session, kwargs["id"])
         if query:
             return query
         return cls(**kwargs)
@@ -256,15 +301,19 @@ class Keywords(Base):
 
     id = Column(Integer, primary_key=True)
     keywords = Column(ARRAY(String))
-    movie_id = Column(Integer, ForeignKey("movie.id"))
-    movie = relationship("Movie", back_populates="keywords")
+    movies_id = Column(Integer, ForeignKey("movies.id"))
+    movies = relationship("Movie", back_populates="keywords")
 
     def __repr__(self):
         return "<Keywords(keywords='%s')>" % (self.keywords,)
 
     @classmethod
+    def get(cls, session: Session, _id: int) -> Base:
+        return session.query(cls).filter(cls.id == _id).first()
+
+    @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.id == kwargs["id"]).first()
+        query = cls.get(session, kwargs["id"])
         if query:
             return query
         return cls(**kwargs)
@@ -274,16 +323,22 @@ class Movie(Base):
     __tablename__ = "movies"
 
     id = Column(Integer, primary_key=True)
-    movie_metadata = relationship("MovieMetadata", uselist=False, back_populates="movies")
-    movie_keywords = relationship("Keywords", uselist=False, back_populates="movies")
-    movie_credits = relationship("Credits", uselist=False, back_populates="movies")
+    movies_metadata = relationship(
+        "MovieMetadata", uselist=False, back_populates="movies"
+    )
+    credits = relationship("Credits", uselist=False, back_populates="movies")
+    keywords = relationship("Keywords", uselist=False, back_populates="movies")
 
     def __repr__(self):
         return "<Movie(movie_metadata='%s')>" % (self.movie_metadata,)
 
     @classmethod
+    def get(cls, session: Session, _id: int) -> Base:
+        return session.query(cls).filter(cls.id == _id).first()
+
+    @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = session.query(cls).filter(cls.id == kwargs["id"]).first()
+        query = cls.get(session, kwargs["id"])
         if query:
             return query
         return cls(**kwargs)
