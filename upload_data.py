@@ -167,7 +167,8 @@ def add_actors_or_crew(
 ) -> Iterator:
     """ Creates an instances of Actor or CrewMember model. """
 
-    for item in load_to_json(data):
+    loaded_data = load_to_json(data)
+    for item in loaded_data:
         data = prepare_actor_or_crew_member_data(item, movie_id)
         record = model.create_or_update(session, **data)
         yield record
@@ -196,6 +197,22 @@ def upload_movies_keywords(session: Session, row: np.ndarray) -> Iterator:
     yield models.Keywords.get_or_create(session, id=row[0], keywords=row[1])
 
 
+def upload_movies(session: Session) -> Iterator:
+    movies_metadata = session.query(models.MovieMetadata).order_by(models.MovieMetadata.id)
+    movies_credits = session.query(models.Credits).order_by(models.Credits.id)
+    movies_keywords = session.query(models.Keywords).order_by(models.Keywords.id)
+    queried_data = (movies_metadata, movies_credits, movies_keywords)
+
+    for (_metadata, _credits, _keywords) in zip_longest(*queried_data):
+        yield models.Movie.get_or_create(
+            session,
+            id=_metadata.id,
+            movies_metadata=_metadata,
+            credits=_credits,
+            keywords=_keywords,
+        )
+
+
 def upload_data_to_db(
     session: Session, data: Tuple[np.ndarray, np.ndarray, np.ndarray]
 ) -> Iterator:
@@ -207,25 +224,12 @@ def upload_data_to_db(
         yield from upload_movies_credits(session, row)
     for row in data[2]:
         yield from upload_movies_keywords(session, row)
-
-    # TODO finish adding data to Movie model
-
-    # for (movie_metadata, movie_credits, movie_keywords) in zip_longest(*data):
-    #     metadata = upload_movies_metadata(session, movie_metadata)
-    #     _credits = upload_movies_credits(session, movie_credits)
-    #     keywords = upload_movies_keywords(session, movie_keywords)
-    #     yield models.Movie.get_or_create(
-    #         session,
-    #         id=metadata.id,
-    #         movies_metadata=metadata,
-    #         credits=_credits,
-    #         keywords=keywords,
-    #     )
+    yield from upload_movies(session)
 
 
-# if __name__ == "__main__":
-#     db_man = DBManager()
-#     db_man.create_tables()
-#     engine = db_man.default_db_engine
-#     data = upload_csv()
-#     upload_data_to_db(engine, data)
+if __name__ == "__main__":
+    db_man = DBManager()
+    db_man.create_tables()
+    engine = db_man.default_db_engine
+    data = upload_csv()
+    open_session(engine, upload_data_to_db, data)

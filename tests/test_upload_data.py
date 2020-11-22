@@ -13,7 +13,6 @@ from upload_data import (
     upload_movies_keywords,
     upload_data_to_db,
     load_to_json,
-    make_convertible_to_json,
 )
 from handle_sessions import HandleSession, open_session
 from tests.test_db_manager import temp_db
