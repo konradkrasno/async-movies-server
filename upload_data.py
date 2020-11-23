@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 from handle_sessions import open_session
 from db_manager import DBManager
 from settings import BASE_DIR
-from itertools import zip_longest
 
 
 def make_convertible_to_json(string: str) -> str:
@@ -147,70 +146,77 @@ def upload_movies_metadata(session: Session, row: np.ndarray) -> Iterator:
         yield record
 
 
-def prepare_actor_or_crew_member_data(data: Dict, movie_id: int) -> Dict:
-    """ Prepares data for creating an instance od Actor or CrewMember model. """
+def prepare_actor_or_crew_member_data(data: Dict) -> Dict:
+    """ Prepares data for creating an instance of Actor or CrewMember model. """
 
     return {
         "id": data["id"],
         "name": data["name"],
         "gender": data["gender"],
         "profile_path": data["profile_path"],
+    }
+
+
+def prepare_cast_data(data: Dict, actor: models.Actor, movie_id: int) -> Dict:
+    """ Prepares data for creating an instance of Cast model. """
+
+    return {
+        "character": data["character"],
+        "actor": actor,
+        "order": data["order"],
         "movie_id": movie_id,
     }
 
 
-def add_actors_or_crew(
-    session: Session,
-    data: str,
-    movie_id: int,
-    model: Union[models.Actor, models.CrewMember],
-) -> Iterator:
-    """ Creates an instances of Actor or CrewMember model. """
+def prepare_crew_data(data: Dict, crew_member: models.CrewMember, movie_id: int) -> Dict:
+    """ Prepares data for creating an instance of Crew model. """
 
-    loaded_data = load_to_json(data)
-    for item in loaded_data:
-        data = prepare_actor_or_crew_member_data(item, movie_id)
-        record = model.create_or_update(session, **data)
-        yield record
+    return {
+        "department": data["department"],
+        "job": data["job"],
+        "crew_member": crew_member,
+        "movie_id": movie_id,
+    }
+
+
+def upload_cast(session: Session, data: Dict, movie_id: int) -> Iterator:
+    """ Creates and yields instances of Actor and Cast models. """
+
+    for item in data:
+        actor_data = prepare_actor_or_crew_member_data(item)
+        actor = models.Actor.get_or_create(session, **actor_data)
+        yield actor
+        cast_data = prepare_cast_data(item, actor, movie_id)
+        cast = models.Cast.create(session, **cast_data)
+        yield cast
+
+
+def upload_crew(session: Session, data: Dict, movie_id: int) -> Iterator:
+    """ Creates and yields instances of CrewMember and Crew models. """
+
+    for item in data:
+        crew_member_data = prepare_actor_or_crew_member_data(item)
+        crew_member = models.CrewMember.get_or_create(session, **crew_member_data)
+        yield crew_member
+        crew_data = prepare_crew_data(item, crew_member, movie_id)
+        crew = models.Crew.create(session, **crew_data)
+        yield crew
 
 
 def upload_movies_credits(session: Session, row: np.ndarray) -> Iterator:
     """ Creates and yields instances of Credits and related models from data from the row. """
 
     movie_id = row[2]
-    actors = list()
-    for actor in add_actors_or_crew(session, row[0], movie_id, models.Actor):
-        actors.append(actor)
-        yield actor
-    crew_members = list()
-    for member in add_actors_or_crew(session, row[1], movie_id, models.CrewMember):
-        crew_members.append(member)
-        yield member
-    yield models.Credits.get_or_create(
-        session, id=movie_id, actors=actors, crew_members=crew_members
-    )
+    cast_data = load_to_json(row[0])
+    yield from upload_cast(session, cast_data, movie_id)
+    crew_data = load_to_json(row[1])
+    yield from upload_crew(session, crew_data, movie_id)
 
 
 def upload_movies_keywords(session: Session, row: np.ndarray) -> Iterator:
     """ Creates and yields instances of Keywords from data from the row. """
 
-    yield models.Keywords.get_or_create(session, id=row[0], keywords=row[1])
-
-
-def upload_movies(session: Session) -> Iterator:
-    movies_metadata = session.query(models.MovieMetadata).order_by(models.MovieMetadata.id)
-    movies_credits = session.query(models.Credits).order_by(models.Credits.id)
-    movies_keywords = session.query(models.Keywords).order_by(models.Keywords.id)
-    queried_data = (movies_metadata, movies_credits, movies_keywords)
-
-    for (_metadata, _credits, _keywords) in zip_longest(*queried_data):
-        yield models.Movie.get_or_create(
-            session,
-            id=_metadata.id,
-            movies_metadata=_metadata,
-            credits=_credits,
-            keywords=_keywords,
-        )
+    yield models.Keywords.get_or_create(session, movie_id=row[0], keywords=row[1])
 
 
 def upload_data_to_db(
@@ -224,12 +230,11 @@ def upload_data_to_db(
         yield from upload_movies_credits(session, row)
     for row in data[2]:
         yield from upload_movies_keywords(session, row)
-    yield from upload_movies(session)
 
 
 if __name__ == "__main__":
     db_man = DBManager()
     db_man.create_tables()
     engine = db_man.default_db_engine
-    data = upload_csv("archive")
+    data = upload_csv("archive/test")
     open_session(engine, upload_data_to_db, data)

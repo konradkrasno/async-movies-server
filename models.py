@@ -166,8 +166,6 @@ class MovieMetadata(Base):
     title = Column(String)
     vote_average = Column(Float)
     vote_count = Column(Integer)
-    movies_id = Column(Integer, ForeignKey("movies.id"))
-    movies = relationship("Movie", back_populates="movies_metadata")
 
     def __repr__(self):
         return "<MovieMetadata(title='%s')>" % (self.title,)
@@ -187,22 +185,15 @@ class MovieMetadata(Base):
         return cls(**kwargs)
 
 
-actors_association_table = Table(
-    "actors_association",
-    Base.metadata,
-    Column("actors", Integer, ForeignKey("actors.id")),
-    Column("movies_metadata", BigInteger, ForeignKey("movies_metadata.id")),
-)
-
-
 class Actor(Base):
     __tablename__ = "actors"
 
     id = Column(Integer, primary_key=True)
-    movie_ids = relationship("MovieMetadata", secondary=actors_association_table)
     name = Column(String)
     gender = Column(Integer)
     profile_path = Column(String)
+    cast_id = Column(Integer, ForeignKey("cast.id"))
+    cast = relationship("Cast", back_populates="actor")
 
     def __repr__(self):
         return "<Actor(name='%s')>" % (self.name,)
@@ -212,35 +203,37 @@ class Actor(Base):
         return session.query(cls).filter(cls.id == _id).first()
 
     @classmethod
-    def create_or_update(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
         query = cls.get(session, kwargs["id"])
-        movie_id = kwargs.pop("movie_id")
-        movie_metadata = MovieMetadata.get(session, movie_id)
         if query:
-            record = query
-        else:
-            record = cls(**kwargs)
-        if movie_metadata:
-            record.movie_ids.append(movie_metadata)
-        return record
+            return query
+        return cls(**kwargs)
 
 
-crew_members_association_table = Table(
-    "crew_members_association",
-    Base.metadata,
-    Column("crew_members", Integer, ForeignKey("crew_members.id")),
-    Column("movies_metadata", BigInteger, ForeignKey("movies_metadata.id")),
-)
+class Cast(Base):
+    __tablename__ = "cast"
+
+    id = Column(Integer, primary_key=True)
+    character = Column(String)
+    order = Column(Integer)
+    actor = relationship("Actor", uselist=False, back_populates="cast")
+    movie_id = Column(Integer, ForeignKey("movies_metadata.id"))
+
+    @classmethod
+    def create(cls, session: Session, **kwargs: Any) -> Base:
+        return cls(**kwargs)
 
 
 class CrewMember(Base):
     __tablename__ = "crew_members"
 
     id = Column(Integer, primary_key=True)
-    movie_ids = relationship("MovieMetadata", secondary=crew_members_association_table)
+    # crew_ids = relationship("Crew", secondary=crew_members_association_table)
     name = Column(String)
     gender = Column(Integer)
     profile_path = Column(String)
+    crew_id = Column(Integer, ForeignKey("crew.id"))
+    crew = relationship("Crew", back_populates="crew_member")
 
     def __repr__(self):
         return "<CrewMember(name='%s')>" % (self.name,)
@@ -250,49 +243,24 @@ class CrewMember(Base):
         return session.query(cls).filter(cls.id == _id).first()
 
     @classmethod
-    def create_or_update(cls, session: Session, **kwargs: Any) -> Base:
-        query = cls.get(session, kwargs["id"])
-        movie_id = kwargs.pop("movie_id")
-        movie_metadata = MovieMetadata.get(session, movie_id)
-        if query:
-            record = query
-        else:
-            record = cls(**kwargs)
-        if movie_metadata:
-            record.movie_ids.append(movie_metadata)
-        return record
-
-
-credits_association_table = Table(
-    "credits_association",
-    Base.metadata,
-    Column("credits", Integer, ForeignKey("credits.id")),
-    Column("actors", Integer, ForeignKey("actors.id")),
-    Column("crew_members", Integer, ForeignKey("crew_members.id")),
-)
-
-
-class Credits(Base):
-    __tablename__ = "credits"
-
-    id = Column(Integer, primary_key=True)
-    actors = relationship("Actor", secondary=credits_association_table)
-    crew_members = relationship("CrewMember", secondary=credits_association_table)
-    movies_id = Column(Integer, ForeignKey("movies.id"))
-    movies = relationship("Movie", back_populates="credits")
-
-    def __repr__(self):
-        return "<Credits(actors='%s', crew='%s')>" % (self.actors, self.crew)
-
-    @classmethod
-    def get(cls, session: Session, _id: int) -> Base:
-        return session.query(cls).filter(cls.id == _id).first()
-
-    @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
         query = cls.get(session, kwargs["id"])
         if query:
             return query
+        return cls(**kwargs)
+
+
+class Crew(Base):
+    __tablename__ = "crew"
+
+    id = Column(Integer, primary_key=True)
+    department = Column(String)
+    job = Column(String)
+    crew_member = relationship("CrewMember", uselist=False, back_populates="crew")
+    movie_id = Column(Integer, ForeignKey("movies_metadata.id"))
+
+    @classmethod
+    def create(cls, session: Session, **kwargs: Any) -> Base:
         return cls(**kwargs)
 
 
@@ -300,45 +268,19 @@ class Keywords(Base):
     __tablename__ = "keywords"
 
     id = Column(Integer, primary_key=True)
+    movie_id = Column(Integer, ForeignKey("movies_metadata.id"))
     keywords = Column(ARRAY(String))
-    movies_id = Column(Integer, ForeignKey("movies.id"))
-    movies = relationship("Movie", back_populates="keywords")
 
     def __repr__(self):
         return "<Keywords(keywords='%s')>" % (self.keywords,)
 
     @classmethod
-    def get(cls, session: Session, _id: int) -> Base:
-        return session.query(cls).filter(cls.id == _id).first()
+    def get(cls, session: Session, movie_id: int) -> Base:
+        return session.query(cls).filter(cls.movie_id == movie_id).first()
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = cls.get(session, kwargs["id"])
-        if query:
-            return query
-        return cls(**kwargs)
-
-
-class Movie(Base):
-    __tablename__ = "movies"
-
-    id = Column(Integer, primary_key=True)
-    movies_metadata = relationship(
-        "MovieMetadata", uselist=False, back_populates="movies"
-    )
-    credits = relationship("Credits", uselist=False, back_populates="movies")
-    keywords = relationship("Keywords", uselist=False, back_populates="movies")
-
-    def __repr__(self):
-        return "<Movie(movie_metadata='%s')>" % (self.movie_metadata,)
-
-    @classmethod
-    def get(cls, session: Session, _id: int) -> Base:
-        return session.query(cls).filter(cls.id == _id).first()
-
-    @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
-        query = cls.get(session, kwargs["id"])
+        query = cls.get(session, kwargs["movie_id"])
         if query:
             return query
         return cls(**kwargs)

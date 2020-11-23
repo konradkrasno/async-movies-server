@@ -43,18 +43,23 @@ def test_upload_movies_metadata(temp_db, data):
 
 def test_upload_movies_credits(temp_db, data):
     engine = temp_db.test_db_engine
-    row = data[1][0]
-    open_session(engine, upload_movies_credits, row)
+    movie_metadata = data[0][0]
+    open_session(engine, upload_movies_metadata, movie_metadata)
+    credits_data = data[1][0]
+    open_session(engine, upload_movies_credits, credits_data)
     with HandleSession(engine) as handle:
         assert handle.session.query(models.Actor).all()
         assert handle.session.query(models.CrewMember).all()
-        assert handle.session.query(models.Credits).all()
+        assert handle.session.query(models.Cast).all()
+        assert handle.session.query(models.Crew).all()
 
 
 def test_upload_movies_keywords(temp_db, data):
     engine = temp_db.test_db_engine
-    row = data[2][0]
-    open_session(engine, upload_movies_keywords, row)
+    movie_metadata = data[0][0]
+    open_session(engine, upload_movies_metadata, movie_metadata)
+    keywords_data = data[2][0]
+    open_session(engine, upload_movies_keywords, keywords_data)
     with HandleSession(engine) as handle:
         assert handle.session.query(models.Keywords).all()
 
@@ -64,6 +69,6 @@ def test_upload_data(temp_db, data):
     open_session(engine, upload_data_to_db, data)
     with HandleSession(engine) as handle:
         assert len(handle.session.query(models.MovieMetadata).all()) == 10
-        assert len(handle.session.query(models.Credits).all()) == 10
+        assert len(handle.session.query(models.Cast).all()) == 148
+        assert len(handle.session.query(models.Crew).all()) == 326
         assert len(handle.session.query(models.Keywords).all()) == 10
-        assert len(handle.session.query(models.Movie).all()) == 10
