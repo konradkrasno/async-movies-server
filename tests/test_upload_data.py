@@ -50,7 +50,7 @@ def test_upload_movies_credits(temp_db, data):
     with HandleSession(engine) as handle:
         assert handle.session.query(models.Actor).all()
         assert handle.session.query(models.CrewMember).all()
-        assert handle.session.query(models.Cast).all()
+        assert handle.session.query(models.Character).all()
         assert handle.session.query(models.Crew).all()
 
 
@@ -69,6 +69,6 @@ def test_upload_data(temp_db, data):
     open_session(engine, upload_data_to_db, data)
     with HandleSession(engine) as handle:
         assert len(handle.session.query(models.MovieMetadata).all()) == 10
-        assert len(handle.session.query(models.Cast).all()) == 148
+        assert len(handle.session.query(models.Character).all()) == 148
         assert len(handle.session.query(models.Crew).all()) == 326
         assert len(handle.session.query(models.Keywords).all()) == 10

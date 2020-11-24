@@ -192,8 +192,8 @@ class Actor(Base):
     name = Column(String)
     gender = Column(Integer)
     profile_path = Column(String)
-    cast_id = Column(Integer, ForeignKey("cast.id"))
-    cast = relationship("Cast", back_populates="actor")
+    character_id = Column(Integer, ForeignKey("characters.id"))
+    character = relationship("Character", back_populates="actor")
 
     def __repr__(self):
         return "<Actor(name='%s')>" % (self.name,)
@@ -210,13 +210,13 @@ class Actor(Base):
         return cls(**kwargs)
 
 
-class Cast(Base):
-    __tablename__ = "cast"
+class Character(Base):
+    __tablename__ = "characters"
 
     id = Column(Integer, primary_key=True)
     character = Column(String)
     order = Column(Integer)
-    actor = relationship("Actor", uselist=False, back_populates="cast")
+    actor = relationship("Actor", uselist=False, back_populates="character")
     movie_id = Column(Integer, ForeignKey("movies_metadata.id"))
 
     @classmethod

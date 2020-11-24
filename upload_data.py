@@ -157,7 +157,7 @@ def prepare_actor_or_crew_member_data(data: Dict) -> Dict:
     }
 
 
-def prepare_cast_data(data: Dict, actor: models.Actor, movie_id: int) -> Dict:
+def prepare_character_data(data: Dict, actor: models.Actor, movie_id: int) -> Dict:
     """ Prepares data for creating an instance of Cast model. """
 
     return {
@@ -179,15 +179,15 @@ def prepare_crew_data(data: Dict, crew_member: models.CrewMember, movie_id: int)
     }
 
 
-def upload_cast(session: Session, data: Dict, movie_id: int) -> Iterator:
+def upload_characters(session: Session, data: Dict, movie_id: int) -> Iterator:
     """ Creates and yields instances of Actor and Cast models. """
 
     for item in data:
         actor_data = prepare_actor_or_crew_member_data(item)
         actor = models.Actor.get_or_create(session, **actor_data)
         yield actor
-        cast_data = prepare_cast_data(item, actor, movie_id)
-        cast = models.Cast.create(session, **cast_data)
+        cast_data = prepare_character_data(item, actor, movie_id)
+        cast = models.Character.create(session, **cast_data)
         yield cast
 
 
@@ -208,7 +208,7 @@ def upload_movies_credits(session: Session, row: np.ndarray) -> Iterator:
 
     movie_id = row[2]
     cast_data = load_to_json(row[0])
-    yield from upload_cast(session, cast_data, movie_id)
+    yield from upload_characters(session, cast_data, movie_id)
     crew_data = load_to_json(row[1])
     yield from upload_crew(session, crew_data, movie_id)
 

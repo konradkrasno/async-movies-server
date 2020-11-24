@@ -39,11 +39,22 @@ from tests.test_db_manager import temp_db
             [
                 {
                     "id": 1,
-                    "name": "Tom Cruise",
+                    "name": "test",
                     "gender": 2,
                     "profile_path": "example/path",
-                    "movie_id": 100,
-                }
+                },
+            ],
+            ["id"],
+        ),
+        (
+            models.CrewMember,
+            [
+                {
+                    "id": 5,
+                    "name": "test",
+                    "gender": 1,
+                    "profile_path": "example/path",
+                },
             ],
             ["id"],
         ),
@@ -61,60 +72,6 @@ def test_get_or_create(temp_db, model, data, checking_attrs):
     with HandleSession(engine) as handle:
         for item in data:
             record = model.get_or_create(handle.session, **item)
-            handle.session.add(record)
-            handle.session.commit()
-    with HandleSession(engine) as handle:
-        for attr in checking_attrs:
-            assert (
-                handle.session.query(model)
-                .filter(model.__getattribute__(model, attr) == data[0][attr])
-                .first()
-            )
-
-
-@pytest.mark.parametrize(
-    "model, data, checking_attrs",
-    [
-        (
-            models.Actor,
-            [
-                {
-                    "id": 1,
-                    "name": "test",
-                    "gender": 2,
-                    "profile_path": "example/path",
-                    "movie_id": 100,
-                },
-            ],
-            ["id"],
-        ),
-        (
-            models.CrewMember,
-            [
-                {
-                    "id": 5,
-                    "name": "test",
-                    "gender": 1,
-                    "profile_path": "example/path",
-                    "movie_id": 200,
-                },
-            ],
-            ["id"],
-        ),
-    ],
-)
-def test_create_or_update(temp_db, model, data, checking_attrs):
-    engine = temp_db.test_db_engine
-    with HandleSession(engine) as handle:
-        for attr in checking_attrs:
-            assert not (
-                handle.session.query(model)
-                .filter(model.__getattribute__(model, attr) == data[0][attr])
-                .first()
-            )
-    with HandleSession(engine) as handle:
-        for item in data:
-            record = model.create_or_update(handle.session, **item)
             handle.session.add(record)
             handle.session.commit()
     with HandleSession(engine) as handle:
