@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from handle_sessions import open_session
 from db_manager import DBManager
 from settings import BASE_DIR
+from collections.abc import Iterable
 
 
 def make_convertible_to_json(string: str) -> str:
@@ -27,15 +28,21 @@ def make_convertible_to_json(string: str) -> str:
     return string
 
 
-def load_to_json(string: str) -> Dict:
+def load_to_json(string: str) -> Iterable:
     """ Converts string to JSON and returns. If an error occurred, returns empty Dict. """
 
-    string = make_convertible_to_json(string)
+    try:
+        string = make_convertible_to_json(string)
+    except TypeError:
+        return dict()
     try:
         result = json.loads(string)
     except json.decoder.JSONDecodeError:
         return dict()
-    return result
+    else:
+        if isinstance(result, Iterable):
+            return result
+    return dict()
 
 
 def upload_csv(directory: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -236,5 +243,5 @@ if __name__ == "__main__":
     db_man = DBManager()
     db_man.create_tables()
     engine = db_man.default_db_engine
-    data = upload_csv("archive/test")
+    data = upload_csv("archive")
     open_session(engine, upload_data_to_db, data)

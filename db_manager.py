@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.pool import NullPool
 import logging
+import datetime
 
 from settings import DATABASES
 import models
@@ -49,7 +50,7 @@ class TempDB(Config):
     def setup_module(self) -> None:
         with self.default_db_engine.connect() as conn:
             conn.execute("COMMIT")
-            logging.info("Creating test database.")
+            logging.info(f" {datetime.datetime.now()}: Creating test database.")
             self.create_db(conn)
 
     @staticmethod
@@ -61,13 +62,13 @@ class TempDB(Config):
 
     def create_tables(self) -> None:
         with self.test_db_engine.connect() as conn:
-            logging.info("Creating tables.")
+            logging.info(f" {datetime.datetime.now()}: Creating tables.")
             models.Base.metadata.create_all(conn)
 
     def teardown_module(self) -> None:
         with self.default_db_engine.connect() as conn:
             conn.execute("COMMIT")
-            logging.info("Dropping test database.")
+            logging.info(f" {datetime.datetime.now()}: Dropping test database.")
             self.drop_db(conn)
 
     @staticmethod
@@ -86,7 +87,7 @@ class DBManager(Config):
 
     def create_tables(self) -> None:
         with self.default_db_engine.connect() as conn:
-            logging.info("Creating tables.")
+            logging.info(f" {datetime.datetime.now()}: Creating tables.")
             models.Base.metadata.create_all(conn)
 
     # def get_all_data(self) -> None:

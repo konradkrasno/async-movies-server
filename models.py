@@ -5,6 +5,7 @@ from typing import *
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.exc import InvalidRequestError, DataError
 from sqlalchemy import (
     Table,
     Column,
@@ -33,8 +34,11 @@ class Genre(Base):
         return "<Genre(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, name: str) -> Base:
-        return session.query(cls).filter(cls.name == name).first()
+    def get(cls, session: Session, name: str) -> Union[Base, None]:
+        try:
+            return session.query(cls).filter(cls.name == name).first()
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
@@ -54,8 +58,11 @@ class ProductionCompany(Base):
         return "<ProductionCompany(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, name: str) -> Base:
-        return session.query(cls).filter(cls.name == name).first()
+    def get(cls, session: Session, name: str) -> Union[Base, None]:
+        try:
+            return session.query(cls).filter(cls.name == name).first()
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
@@ -76,17 +83,20 @@ class Country(Base):
         return "<Country(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, iso_3166_1: str, name: str) -> Base:
-        return (
-            session.query(cls)
-            .filter(
-                or_(
-                    cls.iso_3166_1 == iso_3166_1,
-                    cls.name == name,
+    def get(cls, session: Session, iso_3166_1: str, name: str) -> Union[Base, None]:
+        try:
+            return (
+                session.query(cls)
+                .filter(
+                    or_(
+                        cls.iso_3166_1 == iso_3166_1,
+                        cls.name == name,
+                    )
                 )
+                .first()
             )
-            .first()
-        )
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
@@ -107,17 +117,20 @@ class Language(Base):
         return "<Language(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, iso_639_1: str, name: str) -> Base:
-        return (
-            session.query(cls)
-            .filter(
-                or_(
-                    cls.iso_639_1 == iso_639_1,
-                    cls.name == name,
+    def get(cls, session: Session, iso_639_1: str, name: str) -> Union[Base, None]:
+        try:
+            return (
+                session.query(cls)
+                .filter(
+                    or_(
+                        cls.iso_639_1 == iso_639_1,
+                        cls.name == name,
+                    )
                 )
+                .first()
             )
-            .first()
-        )
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
@@ -174,8 +187,11 @@ class MovieMetadata(Base):
         return {**self}
 
     @classmethod
-    def get(cls, session: Session, _id: int) -> Base:
-        return session.query(cls).filter(cls.id == _id).first()
+    def get(cls, session: Session, _id: int) -> Union[Base, None]:
+        try:
+            return session.query(cls).filter(cls.id == _id).first()
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
@@ -199,8 +215,11 @@ class Actor(Base):
         return "<Actor(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, _id: int) -> Base:
-        return session.query(cls).filter(cls.id == _id).first()
+    def get(cls, session: Session, _id: int) -> Union[Base, None]:
+        try:
+            return session.query(cls).filter(cls.id == _id).first()
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
@@ -239,8 +258,11 @@ class CrewMember(Base):
         return "<CrewMember(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, _id: int) -> Base:
-        return session.query(cls).filter(cls.id == _id).first()
+    def get(cls, session: Session, _id: int) -> Union[Base, None]:
+        try:
+            return session.query(cls).filter(cls.id == _id).first()
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
@@ -275,8 +297,11 @@ class Keywords(Base):
         return "<Keywords(keywords='%s')>" % (self.keywords,)
 
     @classmethod
-    def get(cls, session: Session, movie_id: int) -> Base:
-        return session.query(cls).filter(cls.movie_id == movie_id).first()
+    def get(cls, session: Session, movie_id: int) -> Union[Base, None]:
+        try:
+            return session.query(cls).filter(cls.movie_id == movie_id).first()
+        except (InvalidRequestError, DataError):
+            return None
 
     @classmethod
     def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
