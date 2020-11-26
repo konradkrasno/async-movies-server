@@ -4,7 +4,7 @@ import pytest
 
 import models
 from handle_sessions import HandleSession
-from tests.test_db_manager import temp_db
+from tests.db_fixtures import temp_db
 
 
 @pytest.mark.parametrize(

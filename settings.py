@@ -5,9 +5,6 @@ import re
 
 from pathlib import Path
 
-with open("secure.json", "r") as file:
-    secure = json.load(file)
-
 
 def get_server_host(main_dir: Path) -> str:
     host_dir = main_dir / "etc/hosts"
@@ -22,6 +19,10 @@ BASE_DIR = Path(__file__).resolve().parent
 MAIN_DIR = BASE_DIR.parent.parent.parent
 HOST = get_server_host(MAIN_DIR)
 
+with open(BASE_DIR / "secure.json", "r") as file:
+    secure = json.load(file)
+
+
 # Server
 SERVER = {
     "HOST": HOST,
@@ -35,6 +36,13 @@ DATABASES = {
         "USER": "postgres",
         "PASSWORD": secure["PG_PASSWORD"],
         "HOST": "localhost",
+        "PORT": 5432,
+    },
+    "docker": {
+        "NAME": "postgres",
+        "USER": "postgres",
+        "PASSWORD": secure["PG_PASSWORD"],
+        "HOST": "172.17.0.2",
         "PORT": 5432,
     },
     "test": {

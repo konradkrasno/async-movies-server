@@ -6,13 +6,20 @@ import asyncio
 
 from message_stream import MessageStream
 from request_manager import RequestManager
+from settings import DATABASES
 
 
 class AsyncServer:
-    def __init__(self, host: str, port: int, loop: asyncio.AbstractEventLoop = None):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        loop: asyncio.AbstractEventLoop = None,
+        db_config: Dict = DATABASES["default"],
+    ):
         self.host = host
         self.port = port
-        self.req_man = RequestManager()
+        self.req_man = RequestManager(db_config=db_config)
         if loop is None:
             self.loop = asyncio.get_event_loop()
         else:

@@ -38,8 +38,10 @@ def open_session(engine: Engine, func: Callable, data: Any):
             try:
                 handle.session.commit()
             except Exception as e:
-                logging.error(f"An error occurred when committing record: {record}. Error info: {e}")
+                logging.error(
+                    f"An error occurred when committing record: {record}. Error info: {e}"
+                )
                 handle.session.rollback()
         finish = datetime.datetime.now()
-        delta = (finish - start)/60
-        logging.info(f" It lasts {delta} minutes.")
+        time_delta = finish - start
+        logging.info(f" It lasts {time_delta.seconds/60} minutes.")

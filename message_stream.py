@@ -41,11 +41,7 @@ class MessageStream:
         while True:
             if len(self.recv_buffer) >= self.recv_header_len:
                 break
-            data = await self.reader.read(100)
-            # Simulate network latency
-            await asyncio.sleep(0.1)
-            print(data.decode())
-            self.recv_buffer += data
+            await self.read_data()
         header = self.recv_buffer[: self.recv_header_len]
         self.recv_header = self.decode_json(header)
         self.recv_buffer = self.recv_buffer[self.recv_header_len :]
@@ -55,13 +51,15 @@ class MessageStream:
         while True:
             if len(self.recv_buffer) >= content_len:
                 break
-            data = await self.reader.read(100)
-            # Simulate network latency
-            await asyncio.sleep(0.1)
-            print(data.decode())
-            self.recv_buffer += data
+            await self.read_data()
         self.decode_recv_content()
         self.recv_buffer = self.recv_buffer[content_len:]
+
+    async def read_data(self):
+        data = await self.reader.read(1024)
+        # Simulate network latency
+        await asyncio.sleep(0.1)
+        self.recv_buffer += data
 
     def decode_recv_content(self) -> None:
         content_type = self.recv_header["content_type"]
@@ -92,6 +90,7 @@ class MessageStream:
         if encoding not in ("utf-8", "ascii"):
             self.close()
             raise ValueError("Wrong encoding! Available encodings: utf-8, ascii.")
+
         self.encoding_to_send = encoding
 
         if type(data) in (dict, json) and content_type == "json":

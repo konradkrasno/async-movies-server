@@ -1,20 +1,86 @@
 """ Provides tests for request_manager module. """
 
+import pytest
+import asyncio
+
 from request_manager import RequestManager
+from settings import DATABASES
 
 
-def test_request_manager_with_valid_request(loop):
-    # TODO add test database
-    request = "print_all_users"
-    req_man = RequestManager()
+@pytest.fixture
+def req_man():
+    return RequestManager(db_config=DATABASES["docker"])
+
+
+@pytest.mark.parametrize(
+    "req, result",
+    [
+        (
+            "director, Quentin Tarantino",
+            {
+                "category": "director",
+                "query": "Quentin Tarantino",
+            },
+        ),
+        (
+            "custom, SELECT * FROM actors;",
+            {
+                "category": "custom",
+                "query": "SELECT * FROM actors;",
+            },
+        ),
+        (
+            "actor",
+            {
+                "category": "wrong_request",
+            },
+        ),
+        (
+            ["wrong request type"],
+            {
+                "category": "wrong_type",
+            },
+        ),
+        (
+            """
+            custom,
+            SELECT * FROM movies_metadata
+            INNER JOIN characters on characters.movie_id = movies.id;
+            """,
+            {
+                "category": "custom",
+                "query": "SELECT * FROM movies_metadata INNER JOIN characters on characters.movie_id = movies.id;",
+            },
+        ),
+    ],
+)
+def test_process_request(req, result):
+    assert RequestManager.process_request(req) == result
+
+
+def test_clean_query():
+    req = """
+    custom_message, SELECT * FROM movies_metadata 
+    INNER JOIN characters on characters.movie_id = movies.id;"""
+    cleaned_req = "custom_message, SELECT * FROM movies_metadata INNER JOIN characters on characters.movie_id = movies.id;"
+    assert RequestManager.clean_query(req) == cleaned_req
+
+
+def test_request_manager_with_valid_request(req_man):
+    # TODO finish
+    loop = asyncio.get_event_loop()
+    request = "get_all_polish_movies"
     response = loop.run_until_complete(req_man.entrypoint(request))
     # TODO add assertion
     print("response:", response)
     assert type(response) == dict
+    loop.close()
 
 
-def test_request_manager_with_unknown_request(loop):
+def test_request_manager_with_unknown_request(req_man):
+    # TODO finish
+    loop = asyncio.get_event_loop()
     request = "unknown_request"
-    req_man = RequestManager()
     response = loop.run_until_complete(req_man.entrypoint(request))
     assert response == {"answer": "Unknown request"}
+    loop.close()

@@ -15,7 +15,7 @@ from upload_data import (
     load_to_json,
 )
 from handle_sessions import HandleSession, open_session
-from tests.test_db_manager import temp_db
+from tests.db_fixtures import temp_db
 
 
 @pytest.fixture

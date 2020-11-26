@@ -169,36 +169,40 @@ def prepare_character_data(data: Dict, actor: models.Actor, movie_id: int) -> Di
 
     return {
         "character": data["character"],
+        "actor_id": actor.id,
         "actor": actor,
         "order": data["order"],
         "movie_id": movie_id,
     }
 
 
-def prepare_crew_data(data: Dict, crew_member: models.CrewMember, movie_id: int) -> Dict:
+def prepare_crew_data(
+    data: Dict, crew_member: models.CrewMember, movie_id: int
+) -> Dict:
     """ Prepares data for creating an instance of Crew model. """
 
     return {
         "department": data["department"],
         "job": data["job"],
+        "crew_member_id": crew_member.id,
         "crew_member": crew_member,
         "movie_id": movie_id,
     }
 
 
-def upload_characters(session: Session, data: Dict, movie_id: int) -> Iterator:
+def upload_characters(session: Session, data: Iterable, movie_id: int) -> Iterator:
     """ Creates and yields instances of Actor and Cast models. """
 
     for item in data:
         actor_data = prepare_actor_or_crew_member_data(item)
         actor = models.Actor.get_or_create(session, **actor_data)
         yield actor
-        cast_data = prepare_character_data(item, actor, movie_id)
-        cast = models.Character.create(session, **cast_data)
-        yield cast
+        character_data = prepare_character_data(item, actor, movie_id)
+        character = models.Character.create(**character_data)
+        yield character
 
 
-def upload_crew(session: Session, data: Dict, movie_id: int) -> Iterator:
+def upload_crew(session: Session, data: Iterable, movie_id: int) -> Iterator:
     """ Creates and yields instances of CrewMember and Crew models. """
 
     for item in data:
@@ -206,7 +210,7 @@ def upload_crew(session: Session, data: Dict, movie_id: int) -> Iterator:
         crew_member = models.CrewMember.get_or_create(session, **crew_member_data)
         yield crew_member
         crew_data = prepare_crew_data(item, crew_member, movie_id)
-        crew = models.Crew.create(session, **crew_data)
+        crew = models.Crew.create(**crew_data)
         yield crew
 
 
@@ -240,7 +244,9 @@ def upload_data_to_db(
 
 
 if __name__ == "__main__":
-    db_man = DBManager()
+    from settings import DATABASES
+
+    db_man = DBManager(db_config=DATABASES["default"])
     db_man.create_tables()
     engine = db_man.default_db_engine
     data = upload_csv("archive")

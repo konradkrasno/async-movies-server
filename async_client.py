@@ -47,11 +47,9 @@ class AsyncClient:
         await message.send_stream(request, content_type, encoding)
         try:
             header, answer = await message.receive_stream()
-        except ValueError as e:
-            print(f"An error occurred: {e} when receiving data from server")
+        except ValueError:
+            print(f"An error occurred when receiving data from server.")
         else:
-            print("header:", header)
-            print("answer:", answer)
             return header, answer
         finally:
             message.close()

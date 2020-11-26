@@ -80,7 +80,7 @@ class TempDB(Config):
 
 
 class DBManager(Config):
-    """ Handles managing access to the database. """
+    """ Manages access to the database. """
 
     def __init__(self, db_config: Dict = DATABASES["default"]):
         super().__init__(db_config)
@@ -89,12 +89,3 @@ class DBManager(Config):
         with self.default_db_engine.connect() as conn:
             logging.info(f" {datetime.datetime.now()}: Creating tables.")
             models.Base.metadata.create_all(conn)
-
-    # def get_all_data(self) -> None:
-    #     session = sessionmaker(bind=self.default_db_engine)()
-    #     print("All data:")
-    #     for instance in session.query(models.Genre).order_by(models.Genre.id):
-    #         print(instance.id, instance.name)
-    #
-    #     for instance in session.query(models.MovieMetadata).order_by(models.MovieMetadata.id):
-    #         print(instance.id, instance.title, instance.genres)

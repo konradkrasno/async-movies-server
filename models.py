@@ -2,6 +2,7 @@
 
 from typing import *
 
+from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -34,14 +35,14 @@ class Genre(Base):
         return "<Genre(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, name: str) -> Union[Base, None]:
+    def get(cls, session: Session, name: str) -> Union[DeclarativeMeta, None]:
         try:
             return session.query(cls).filter(cls.name == name).first()
         except (InvalidRequestError, DataError):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["name"])
         if query:
             return query
@@ -58,14 +59,14 @@ class ProductionCompany(Base):
         return "<ProductionCompany(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, name: str) -> Union[Base, None]:
+    def get(cls, session: Session, name: str) -> Union[DeclarativeMeta, None]:
         try:
             return session.query(cls).filter(cls.name == name).first()
         except (InvalidRequestError, DataError):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["name"])
         if query:
             return query
@@ -83,7 +84,9 @@ class Country(Base):
         return "<Country(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, iso_3166_1: str, name: str) -> Union[Base, None]:
+    def get(
+        cls, session: Session, iso_3166_1: str, name: str
+    ) -> Union[DeclarativeMeta, None]:
         try:
             return (
                 session.query(cls)
@@ -99,7 +102,7 @@ class Country(Base):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["iso_3166_1"], kwargs["name"])
         if query:
             return query
@@ -117,7 +120,9 @@ class Language(Base):
         return "<Language(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, iso_639_1: str, name: str) -> Union[Base, None]:
+    def get(
+        cls, session: Session, iso_639_1: str, name: str
+    ) -> Union[DeclarativeMeta, None]:
         try:
             return (
                 session.query(cls)
@@ -133,7 +138,7 @@ class Language(Base):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["iso_639_1"], kwargs["name"])
         if query:
             return query
@@ -187,14 +192,14 @@ class MovieMetadata(Base):
         return {**self}
 
     @classmethod
-    def get(cls, session: Session, _id: int) -> Union[Base, None]:
+    def get(cls, session: Session, _id: int) -> Union[DeclarativeMeta, None]:
         try:
             return session.query(cls).filter(cls.id == _id).first()
         except (InvalidRequestError, DataError):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["id"])
         if query:
             return query
@@ -208,21 +213,20 @@ class Actor(Base):
     name = Column(String)
     gender = Column(Integer)
     profile_path = Column(String)
-    character_id = Column(Integer, ForeignKey("characters.id"))
-    character = relationship("Character", back_populates="actor")
+    characters = relationship("Character", back_populates="actor")
 
     def __repr__(self):
         return "<Actor(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, _id: int) -> Union[Base, None]:
+    def get(cls, session: Session, _id: int) -> Union[DeclarativeMeta, None]:
         try:
             return session.query(cls).filter(cls.id == _id).first()
         except (InvalidRequestError, DataError):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["id"])
         if query:
             return query
@@ -235,11 +239,12 @@ class Character(Base):
     id = Column(Integer, primary_key=True)
     character = Column(String)
     order = Column(Integer)
-    actor = relationship("Actor", uselist=False, back_populates="character")
+    actor_id = Column(Integer, ForeignKey("actors.id"))
+    actor = relationship("Actor", back_populates="characters")
     movie_id = Column(Integer, ForeignKey("movies_metadata.id"))
 
     @classmethod
-    def create(cls, session: Session, **kwargs: Any) -> Base:
+    def create(cls, **kwargs: Any) -> DeclarativeMeta:
         return cls(**kwargs)
 
 
@@ -247,25 +252,23 @@ class CrewMember(Base):
     __tablename__ = "crew_members"
 
     id = Column(Integer, primary_key=True)
-    # crew_ids = relationship("Crew", secondary=crew_members_association_table)
     name = Column(String)
     gender = Column(Integer)
     profile_path = Column(String)
-    crew_id = Column(Integer, ForeignKey("crew.id"))
     crew = relationship("Crew", back_populates="crew_member")
 
     def __repr__(self):
         return "<CrewMember(name='%s')>" % (self.name,)
 
     @classmethod
-    def get(cls, session: Session, _id: int) -> Union[Base, None]:
+    def get(cls, session: Session, _id: int) -> Union[DeclarativeMeta, None]:
         try:
             return session.query(cls).filter(cls.id == _id).first()
         except (InvalidRequestError, DataError):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["id"])
         if query:
             return query
@@ -278,11 +281,12 @@ class Crew(Base):
     id = Column(Integer, primary_key=True)
     department = Column(String)
     job = Column(String)
-    crew_member = relationship("CrewMember", uselist=False, back_populates="crew")
+    crew_member_id = Column(Integer, ForeignKey("crew_members.id"))
+    crew_member = relationship("CrewMember", back_populates="crew")
     movie_id = Column(Integer, ForeignKey("movies_metadata.id"))
 
     @classmethod
-    def create(cls, session: Session, **kwargs: Any) -> Base:
+    def create(cls, **kwargs: Any) -> DeclarativeMeta:
         return cls(**kwargs)
 
 
@@ -297,14 +301,14 @@ class Keywords(Base):
         return "<Keywords(keywords='%s')>" % (self.keywords,)
 
     @classmethod
-    def get(cls, session: Session, movie_id: int) -> Union[Base, None]:
+    def get(cls, session: Session, movie_id: int) -> Union[DeclarativeMeta, None]:
         try:
             return session.query(cls).filter(cls.movie_id == movie_id).first()
         except (InvalidRequestError, DataError):
             return None
 
     @classmethod
-    def get_or_create(cls, session: Session, **kwargs: Any) -> Base:
+    def get_or_create(cls, session: Session, **kwargs: Any) -> DeclarativeMeta:
         query = cls.get(session, kwargs["movie_id"])
         if query:
             return query
