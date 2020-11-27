@@ -25,18 +25,24 @@ class AsyncClient:
 
     @staticmethod
     def print_instruction() -> None:
-        # TODO finish instruction
-        print("Hello")
+        print(
+            """Enter one of the phrases to download data from the server: 
+            title, 'specify title'
+            actor, 'specify actor'
+            director, 'specify director'
+            screenplay, 'specify screenplay'
+            custom, 'custom query'"""
+        )
 
     def run_client(
-        self, request: Any, content_type: str, encoding: str
+        self, request: Union[str, bytes, Dict], content_type: str, encoding: str
     ) -> Tuple[Dict, Union[str, Dict, bytes]]:
         return self.loop.run_until_complete(
             self.send_request(request, content_type, encoding)
         )
 
     async def send_request(
-        self, request: Any, content_type: str, encoding: str
+        self, request: Union[str, bytes, Dict], content_type: str, encoding: str
     ) -> Tuple[Dict, Union[str, Dict, bytes]]:
         reader, writer = await asyncio.open_connection(self.host, self.port)
         message = MessageStream(reader, writer)
