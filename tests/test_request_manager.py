@@ -67,7 +67,7 @@ def test_process_request(req, result):
         ),
     ],
 )
-def test_request_manager_with_valid_request(req_man, question, answer):
+def test_request_manager(req_man, question, answer):
     loop = asyncio.get_event_loop()
     response = loop.run_until_complete(req_man.entrypoint(question))
     loop.call_later(1, loop.stop)
