@@ -41,29 +41,10 @@ def req_man():
                 "category": "wrong_type",
             },
         ),
-        (
-            """
-            custom,
-            SELECT * FROM movies_metadata
-            INNER JOIN characters on characters.movie_id = movies.id;
-            """,
-            {
-                "category": "custom",
-                "query": "SELECT * FROM movies_metadata INNER JOIN characters on characters.movie_id = movies.id;",
-            },
-        ),
     ],
 )
 def test_process_request(req, result):
     assert RequestManager.process_request(req) == result
-
-
-def test_clean_query():
-    req = """
-    custom_message, SELECT * FROM movies_metadata 
-    INNER JOIN characters on characters.movie_id = movies.id;"""
-    cleaned_req = "custom_message, SELECT * FROM movies_metadata INNER JOIN characters on characters.movie_id = movies.id;"
-    assert RequestManager.clean_query(req) == cleaned_req
 
 
 def test_request_manager_with_valid_request(req_man):

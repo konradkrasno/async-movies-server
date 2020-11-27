@@ -1,4 +1,4 @@
-""" Implementation of the client. """
+""" Implementation of the server. """
 
 from typing import *
 

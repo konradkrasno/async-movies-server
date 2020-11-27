@@ -73,7 +73,9 @@ class RequestManager:
         return """
         SELECT * FROM movies_metadata movies
         WHERE movies.title = '%s'
-        """ % (title,)
+        """ % (
+            title,
+        )
 
     @staticmethod
     def get_by_actor(actor: str) -> str:
@@ -82,7 +84,9 @@ class RequestManager:
         INNER JOIN characters ON characters.movie_id = movies.id
         INNER JOIN actors ON actors.id = characters.actor_id
         WHERE actors.name = '%s';
-        """ % (actor,)
+        """ % (
+            actor,
+        )
 
     @staticmethod
     def get_by_director(director: str) -> str:
@@ -92,7 +96,9 @@ class RequestManager:
         INNER JOIN crew_members ON crew_members.id = crew.crew_member_id
         WHERE crew.job = 'Director'
         AND crew_members.name = '%s';
-        """ % (director,)
+        """ % (
+            director,
+        )
 
     @staticmethod
     def get_by_screenplay(screenplay: str) -> str:
@@ -102,7 +108,9 @@ class RequestManager:
         INNER JOIN crew_members ON crew_members.id = crew.crew_member_id
         WHERE crew.department = 'Writing'
         AND crew_members.name = '%s';
-        """ % (screenplay,)
+        """ % (
+            screenplay,
+        )
 
     @classmethod
     def custom_query(cls, query: str) -> str:
@@ -118,14 +126,11 @@ class RequestManager:
 
     @staticmethod
     def clean_query(query: str) -> str:
-        # TODO add regex to remove all spaces and \n
-        query = query.replace("\n", " ")
+        query = query.replace("\n", "")
         return query
 
     @classmethod
-    async def query_db(
-        cls, db: asyncpg.pool.Pool, query: str
-    ) -> list:
+    async def query_db(cls, db: asyncpg.pool.Pool, query: str) -> list:
         records = list()
         async with db.acquire() as conn:
             async with conn.transaction():

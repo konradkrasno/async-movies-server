@@ -21,12 +21,9 @@ def test_server_with_valid_data(loop) -> None:
             SERVER["HOST"],
             SERVER["PORT"],
             loop=loop,
-            test_request=message["message"],
-            test_content_type=message["content_type"],
-            test_encoding=message["encoding"],
         )
         try:
-            header, result = async_client.run_client()
+            header, result = async_client.run_client(message["message"], message["content_type"], message["encoding"])
         except ConnectionRefusedError:
             raise ConnectionRefusedError(
                 "Server is not running. Run start_server before start tests."
@@ -51,13 +48,10 @@ def test_server_with_wrong_data(loop) -> None:
             SERVER["HOST"],
             SERVER["PORT"],
             loop=loop,
-            test_request=message["message"],
-            test_content_type=message["content_type"],
-            test_encoding=message["encoding"],
         )
         try:
             with pytest.raises(ValueError) as e:
-                async_client.run_client()
+                async_client.run_client(message["message"], message["content_type"], message["encoding"])
         except ConnectionRefusedError:
             raise ConnectionRefusedError(
                 "Server is not running. Run start_server before start tests."

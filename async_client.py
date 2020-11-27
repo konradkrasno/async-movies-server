@@ -1,4 +1,4 @@
-""" Implementation of the server. """
+""" Implementation of the client. """
 
 from typing import *
 
@@ -13,9 +13,6 @@ class AsyncClient:
         host: str,
         port: int,
         loop: asyncio.AbstractEventLoop = None,
-        test_request: Union[str, Dict, bytes] = None,
-        test_content_type: str = "",
-        test_encoding: str = "",
     ):
         self.host = host
         self.port = port
@@ -23,26 +20,25 @@ class AsyncClient:
             self.loop = asyncio.get_event_loop()
         else:
             self.loop = loop
-        self._test_request = test_request
-        self._test_content_type = test_content_type
-        self._test_encoding = test_encoding
+        # Call print_instruction function
+        self.print_instruction()
 
-    async def send_request(self) -> Tuple[Dict, Union[str, Dict, bytes]]:
+    @staticmethod
+    def print_instruction() -> None:
+        # TODO finish instruction
+        print("Hello")
+
+    def run_client(
+        self, request: Any, content_type: str, encoding: str
+    ) -> Tuple[Dict, Union[str, Dict, bytes]]:
+        return self.loop.run_until_complete(
+            self.send_request(request, content_type, encoding)
+        )
+
+    async def send_request(
+        self, request: Any, content_type: str, encoding: str
+    ) -> Tuple[Dict, Union[str, Dict, bytes]]:
         reader, writer = await asyncio.open_connection(self.host, self.port)
-
-        if self._test_request:
-            request = self._test_request
-        else:
-            request = input()
-        if self._test_content_type:
-            content_type = self._test_content_type
-        else:
-            content_type = "text"
-        if self._test_encoding:
-            encoding = self._test_encoding
-        else:
-            encoding = "utf-8"
-
         message = MessageStream(reader, writer)
         await message.send_stream(request, content_type, encoding)
         try:
@@ -54,9 +50,6 @@ class AsyncClient:
         finally:
             message.close()
         return dict(), str()
-
-    def run_client(self) -> Tuple[Dict, Union[str, Dict, bytes]]:
-        return self.loop.run_until_complete(self.send_request())
 
     def close(self) -> None:
         self.loop.close()
