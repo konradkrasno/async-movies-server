@@ -14,6 +14,7 @@ def loop() -> asyncio.AbstractEventLoop:
     return asyncio.get_event_loop()
 
 
+@pytest.mark.database
 @pytest.mark.server
 def test_server_with_valid_data(loop) -> None:
     for message in valid_data:
@@ -23,22 +24,23 @@ def test_server_with_valid_data(loop) -> None:
             loop=loop,
         )
         try:
-            header, result = async_client.run_client(message["message"], message["content_type"], message["encoding"])
+            header, result = async_client.run_client(
+                message["message"], message["content_type"], message["encoding"]
+            )
+
         except ConnectionRefusedError:
             raise ConnectionRefusedError(
-                "Server is not running. Run start_server before start tests."
+                "Server is not running. Run app_server.py before start tests."
             )
         else:
             assert header == {
-                "content_type": message["content_type"],
-                "content_encoding": message["encoding"],
+                "content_type": "json",
+                "content_encoding": "utf-8",
                 "content_length": len(
-                    json.dumps(message["message"]).encode(message["encoding"])
+                    json.dumps(message["result"]).encode(message["encoding"])
                 )
-                if message["content_type"] == "json"
-                else len(message["message"]),
             }
-            assert result == message["message"]
+            assert result == message["result"]
 
 
 @pytest.mark.server
@@ -51,8 +53,10 @@ def test_server_with_wrong_data(loop) -> None:
         )
         try:
             with pytest.raises(ValueError) as e:
-                async_client.run_client(message["message"], message["content_type"], message["encoding"])
+                async_client.run_client(
+                    message["message"], message["content_type"], message["encoding"]
+                )
         except ConnectionRefusedError:
             raise ConnectionRefusedError(
-                "Server is not running. Run start_server before start tests."
+                "Server is not running. Run app_server.py before start tests."
             )

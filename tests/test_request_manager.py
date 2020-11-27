@@ -5,11 +5,12 @@ import asyncio
 
 from request_manager import RequestManager
 from settings import DATABASES
+from tests.testing_data import test_actor_query_result
 
 
 @pytest.fixture
 def req_man():
-    return RequestManager(db_config=DATABASES["docker"])
+    return RequestManager(db_config=DATABASES["default"])
 
 
 @pytest.mark.parametrize(
@@ -47,21 +48,27 @@ def test_process_request(req, result):
     assert RequestManager.process_request(req) == result
 
 
-def test_request_manager_with_valid_request(req_man):
-    # TODO finish
+@pytest.mark.database
+@pytest.mark.parametrize(
+    "question, answer",
+    [
+        ("actor, Janusz Gajos", test_actor_query_result),
+        (
+            "custom, SELECT title FROM movies_metadata WHERE title='Pulp Fiction'",
+            {"answer": [{"title": "Pulp Fiction"}]},
+        ),
+        ("wrong request", {"answer": "Wrong request content."}),
+        (
+            {
+                "category": "custom",
+                "query": "SELECT title FROM movies_metadata WHERE title='Pulp Fiction';",
+            },
+            {"answer": [{"title": "Pulp Fiction"}]},
+        ),
+    ],
+)
+def test_request_manager_with_valid_request(req_man, question, answer):
     loop = asyncio.get_event_loop()
-    request = "get_all_polish_movies"
-    response = loop.run_until_complete(req_man.entrypoint(request))
-    # TODO add assertion
-    print("response:", response)
-    assert type(response) == dict
-    loop.close()
-
-
-def test_request_manager_with_unknown_request(req_man):
-    # TODO finish
-    loop = asyncio.get_event_loop()
-    request = "unknown_request"
-    response = loop.run_until_complete(req_man.entrypoint(request))
-    assert response == {"answer": "Unknown request"}
-    loop.close()
+    response = loop.run_until_complete(req_man.entrypoint(question))
+    loop.call_later(1, loop.stop)
+    assert response == answer
