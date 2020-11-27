@@ -38,7 +38,7 @@ def test_server_with_valid_data(loop) -> None:
                 "content_encoding": "utf-8",
                 "content_length": len(
                     json.dumps(message["result"]).encode(message["encoding"])
-                )
+                ),
             }
             assert result == message["result"]
 
