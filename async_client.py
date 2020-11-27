@@ -8,6 +8,8 @@ from message_stream import MessageStream
 
 
 class AsyncClient:
+    """ Initializes and manages the client. """
+
     def __init__(
         self,
         host: str,
@@ -37,13 +39,16 @@ class AsyncClient:
     def run_client(
         self, request: Union[str, bytes, Dict], content_type: str, encoding: str
     ) -> Tuple[Dict, Union[str, Dict, bytes]]:
+        """ Runs the event loop. """
         return self.loop.run_until_complete(
-            self.send_request(request, content_type, encoding)
+            self.handle_connection(request, content_type, encoding)
         )
 
-    async def send_request(
+    async def handle_connection(
         self, request: Union[str, bytes, Dict], content_type: str, encoding: str
     ) -> Tuple[Dict, Union[str, Dict, bytes]]:
+        """ Sends the request to the server and receives data from it. """
+
         reader, writer = await asyncio.open_connection(self.host, self.port)
         message = MessageStream(reader, writer)
         await message.send_stream(request, content_type, encoding)
@@ -58,4 +63,5 @@ class AsyncClient:
         return dict(), str()
 
     def close(self) -> None:
+        """ Closing the event loop. """
         self.loop.close()

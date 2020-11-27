@@ -15,12 +15,16 @@ class RequestManager:
         self.encoding = "utf-8"
 
     async def entrypoint(self, request: Any) -> Dict:
+        """ Processes the request message to get information from it and creates the database pool. """
+
         request = self.process_request(request)
         async with asyncpg.create_pool(self.dsn) as db:
             return await self.handle_request(db, request)
 
     @classmethod
     def process_request(cls, request: Any) -> Dict:
+        """ Gets information from the request. """
+
         if type(request) == str:
             request = cls.clean_query(request)
             try:
@@ -43,6 +47,8 @@ class RequestManager:
             }
 
     async def handle_request(self, db: asyncpg.pool.Pool, request: Dict) -> Dict:
+        """ Manages the requests. If the request is proper, queries the database. """
+
         category = request.get("category")
         query = request.get("query")
         try:

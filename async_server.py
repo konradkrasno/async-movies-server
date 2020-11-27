@@ -10,6 +10,8 @@ from settings import DATABASES
 
 
 class AsyncServer:
+    """ Initializes and manages the server. """
+
     def __init__(
         self,
         host: str,
@@ -25,7 +27,19 @@ class AsyncServer:
         else:
             self.loop = loop
 
+    def run_server(self) -> asyncio.AbstractServer:
+        """ Runs the event loop. """
+
+        server = self.loop.run_until_complete(self.start_server())
+        try:
+            self.loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        return server
+
     async def start_server(self) -> asyncio.AbstractServer:
+        """ Starts the server. """
+
         server = await asyncio.start_server(
             self.handle_connection, self.host, self.port
         )
@@ -35,11 +49,14 @@ class AsyncServer:
 
     @staticmethod
     def get_addr(server: asyncio.AbstractServer) -> str:
+        """ Gets the server address. """
         return server.sockets[0].getsockname() if server.sockets else "unknown"
 
     async def handle_connection(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
+        """ Receives messages from the clients and sends answers to them. """
+
         addr = writer.get_extra_info("peername")
         message = MessageStream(reader, writer)
         try:
@@ -53,17 +70,11 @@ class AsyncServer:
             message.close()
 
     async def get_answer_from_db(self, request: Union[str, Dict, bytes]) -> Dict:
+        """ Provides data from the database by the information specified in the request. """
         return await self.req_man.entrypoint(request)
 
-    def run_server(self) -> asyncio.AbstractServer:
-        server = self.loop.run_until_complete(self.start_server())
-        try:
-            self.loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        return server
-
     def close(self, server: asyncio.AbstractServer) -> None:
+        """ Closing the server. """
         server.close()
         self.loop.run_until_complete(server.wait_closed())
         self.loop.close()
