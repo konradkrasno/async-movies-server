@@ -6,15 +6,17 @@ from db_manager import DBManager, TempDB
 from settings import DATABASES
 
 
-@pytest.fixture()
-def temp_db():
+class TestDB:
     temp_db = TempDB()
-    temp_db.setup_module()
-    temp_db.create_tables()
-    try:
-        yield temp_db
-    finally:
-        temp_db.teardown_module()
+
+    @classmethod
+    def setup_class(cls):
+        cls.temp_db.setup_module()
+        cls.temp_db.create_tables()
+
+    @classmethod
+    def teardown_class(cls):
+        cls.temp_db.teardown_module()
 
 
 @pytest.fixture
